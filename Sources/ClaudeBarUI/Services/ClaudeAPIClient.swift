@@ -1,23 +1,32 @@
 import Foundation
 
-struct ClaudeAPIClient {
+public struct ClaudeAPIClient {
     private static let baseURL = "https://claude.ai"
 
-    let sessionKey: String
-    let orgId: String
+    public let sessionKey: String
+    public let orgId: String
+
+    public init(sessionKey: String, orgId: String) {
+        self.sessionKey = sessionKey
+        self.orgId = orgId
+    }
 
     // MARK: - Request Builders
 
-    func buildUsageRequest() -> URLRequest {
-        let url = URL(string: "\(Self.baseURL)/api/organizations/\(orgId)/usage")!
+    public func buildUsageRequest() throws -> URLRequest {
+        guard let url = URL(string: "\(Self.baseURL)/api/organizations/\(orgId)/usage") else {
+            throw APIError.invalidResponse
+        }
         var request = URLRequest(url: url)
         request.httpMethod = "GET"
         request.setValue("sessionKey=\(sessionKey)", forHTTPHeaderField: "Cookie")
         return request
     }
 
-    static func buildOrganizationsRequest(sessionKey: String) -> URLRequest {
-        let url = URL(string: "\(baseURL)/api/organizations")!
+    public static func buildOrganizationsRequest(sessionKey: String) throws -> URLRequest {
+        guard let url = URL(string: "\(baseURL)/api/organizations") else {
+            throw APIError.invalidResponse
+        }
         var request = URLRequest(url: url)
         request.httpMethod = "GET"
         request.setValue("sessionKey=\(sessionKey)", forHTTPHeaderField: "Cookie")
@@ -26,7 +35,7 @@ struct ClaudeAPIClient {
 
     // MARK: - Response Parsers
 
-    static func parseUsageResponse(data: Data) throws -> UsageResponse {
+    public static func parseUsageResponse(data: Data) throws -> UsageResponse {
         let decoder = JSONDecoder()
         decoder.keyDecodingStrategy = .convertFromSnakeCase
         decoder.dateDecodingStrategy = .custom { decoder in
@@ -41,20 +50,20 @@ struct ClaudeAPIClient {
         return try decoder.decode(UsageResponse.self, from: data)
     }
 
-    static func parseOrganizationsResponse(data: Data) throws -> [Organization] {
+    public static func parseOrganizationsResponse(data: Data) throws -> [Organization] {
         return try JSONDecoder().decode([Organization].self, from: data)
     }
 
     // MARK: - Network Calls
 
-    func fetchUsage() async throws -> UsageResponse {
-        let (data, response) = try await URLSession.shared.data(for: buildUsageRequest())
+    public func fetchUsage() async throws -> UsageResponse {
+        let (data, response) = try await URLSession.shared.data(for: try buildUsageRequest())
         try Self.validateHTTPResponse(response)
         return try Self.parseUsageResponse(data: data)
     }
 
-    static func fetchOrganizations(sessionKey: String) async throws -> [Organization] {
-        let request = buildOrganizationsRequest(sessionKey: sessionKey)
+    public static func fetchOrganizations(sessionKey: String) async throws -> [Organization] {
+        let request = try buildOrganizationsRequest(sessionKey: sessionKey)
         let (data, response) = try await URLSession.shared.data(for: request)
         try validateHTTPResponse(response)
         return try parseOrganizationsResponse(data: data)
@@ -73,7 +82,7 @@ struct ClaudeAPIClient {
     }
 }
 
-enum APIError: Error, Equatable {
+public enum APIError: Error, Equatable {
     case invalidResponse
     case sessionExpired
     case rateLimited

@@ -1,6 +1,6 @@
-import XCTest
+import Testing
 import ViewInspector
-@testable import ClaudeBar
+@testable import ClaudeBarUI
 
 // MARK: - Inspectable Conformances
 
@@ -12,36 +12,33 @@ extension SettingsView: @retroactive Inspectable {}
 
 // MARK: - PopoverView Tests
 
-final class PopoverViewTests: XCTestCase {
+@MainActor
+@Suite
+struct PopoverViewTests {
     private func makeState() -> AppState {
         AppState(keychain: KeychainService(serviceName: "com.claudebar.test"))
     }
 
-    func testShowsSetupViewWhenNotAuthenticated() throws {
+    @Test func showsSetupViewWhenNotAuthenticated() throws {
         let state = makeState()
         let view = PopoverView(state: state)
         let inspected = try view.inspect()
 
-        // Should contain SetupView when not authenticated
-        XCTAssertNoThrow(try inspected.find(SetupView.self))
+        _ = try inspected.find(SetupView.self)
     }
 
-    func testShowsSessionExpiredView() throws {
+    @Test func showsSessionExpiredView() throws {
         let state = makeState()
         state.sessionKey = "sk-test"
         state.orgId = "org-123"
         state.error = .sessionExpired
-        // Note: sessionExpired clears credentials in refreshUsage(), but we set it manually here
-        // to test the view routing. Clear auth so the error path is hit differently.
-        // Actually, the view checks: isAuthenticated AND error == .sessionExpired
-        // So we need both to be true.
         let view = PopoverView(state: state)
         let inspected = try view.inspect()
 
-        XCTAssertNoThrow(try inspected.find(SessionExpiredView.self))
+        _ = try inspected.find(SessionExpiredView.self)
     }
 
-    func testShowsUsageDetailWhenAuthenticated() throws {
+    @Test func showsUsageDetailWhenAuthenticated() throws {
         let state = makeState()
         state.sessionKey = "sk-test"
         state.orgId = "org-123"
@@ -49,83 +46,79 @@ final class PopoverViewTests: XCTestCase {
         let inspected = try view.inspect()
 
         // Should NOT contain SetupView or SessionExpiredView
-        XCTAssertThrowsError(try inspected.find(SetupView.self))
-        XCTAssertThrowsError(try inspected.find(SessionExpiredView.self))
+        #expect(throws: (any Error).self) { try inspected.find(SetupView.self) }
+        #expect(throws: (any Error).self) { try inspected.find(SessionExpiredView.self) }
     }
 
-    func testPopoverRendersVStack() throws {
+    @Test func popoverRendersVStack() throws {
         let state = makeState()
         let view = PopoverView(state: state)
         let inspected = try view.inspect()
 
-        // Verify the root is a VStack
-        XCTAssertNoThrow(try inspected.vStack())
+        _ = try inspected.vStack()
     }
 }
 
 // MARK: - SetupView Tests
 
-final class SetupViewTests: XCTestCase {
+@MainActor
+@Suite
+struct SetupViewTests {
     private func makeState() -> AppState {
         AppState(keychain: KeychainService(serviceName: "com.claudebar.test"))
     }
 
-    func testShowsTitle() throws {
+    @Test func showsTitle() throws {
         let state = makeState()
         let view = SetupView(state: state)
         let inspected = try view.inspect()
 
-        let title = try inspected.find(text: "Setup ClaudeBar")
-        XCTAssertNotNil(title)
+        _ = try inspected.find(text: "Setup ClaudeBar")
     }
 
-    func testShowsInstructions() throws {
+    @Test func showsInstructions() throws {
         let state = makeState()
         let view = SetupView(state: state)
         let inspected = try view.inspect()
 
-        // Instructions contain "claude.ai"
-        XCTAssertNoThrow(try inspected.find(text: "Paste sessionKey here..."))
+        _ = try inspected.find(text: "Paste sessionKey here...")
     }
 
-    func testShowsConnectButton() throws {
+    @Test func showsConnectButton() throws {
         let state = makeState()
         let view = SetupView(state: state)
         let inspected = try view.inspect()
 
-        let connectButton = try inspected.find(button: "Connect")
-        XCTAssertNotNil(connectButton)
+        _ = try inspected.find(button: "Connect")
     }
 
-    func testShowsQuitButton() throws {
+    @Test func showsQuitButton() throws {
         let state = makeState()
         let view = SetupView(state: state)
         let inspected = try view.inspect()
 
-        let quitButton = try inspected.find(button: "Quit ClaudeBar")
-        XCTAssertNotNil(quitButton)
+        _ = try inspected.find(button: "Quit ClaudeBar")
     }
 
-    func testShowsErrorMessage() throws {
+    @Test func showsErrorMessage() throws {
         let state = makeState()
         state.error = .network("Connection failed")
         let view = SetupView(state: state)
         let inspected = try view.inspect()
 
-        let errorText = try inspected.find(text: "Connection failed")
-        XCTAssertNotNil(errorText)
+        _ = try inspected.find(text: "Connection failed")
     }
 
-    func testShowsLoadingIndicator() throws {
+    @Test func showsLoadingIndicator() throws {
         let state = makeState()
         state.isLoading = true
         let view = SetupView(state: state)
         let inspected = try view.inspect()
 
-        XCTAssertNoThrow(try inspected.find(ViewType.ProgressView.self))
+        _ = try inspected.find(ViewType.ProgressView.self)
     }
 
-    func testShowsOrgSelectionWhenMultipleOrgs() throws {
+    @Test func showsOrgSelectionWhenMultipleOrgs() throws {
         let state = makeState()
         state.organizations = [
             Organization(uuid: "org-1", name: "Personal", capabilities: nil),
@@ -134,12 +127,12 @@ final class SetupViewTests: XCTestCase {
         let view = SetupView(state: state)
         let inspected = try view.inspect()
 
-        XCTAssertNoThrow(try inspected.find(text: "Select organization:"))
-        XCTAssertNoThrow(try inspected.find(button: "Personal"))
-        XCTAssertNoThrow(try inspected.find(button: "Work"))
+        _ = try inspected.find(text: "Select organization:")
+        _ = try inspected.find(button: "Personal")
+        _ = try inspected.find(button: "Work")
     }
 
-    func testHidesOrgSelectionForSingleOrg() throws {
+    @Test func hidesOrgSelectionForSingleOrg() throws {
         let state = makeState()
         state.organizations = [
             Organization(uuid: "org-1", name: "Personal", capabilities: nil),
@@ -147,142 +140,144 @@ final class SetupViewTests: XCTestCase {
         let view = SetupView(state: state)
         let inspected = try view.inspect()
 
-        XCTAssertThrowsError(try inspected.find(text: "Select organization:"))
+        #expect(throws: (any Error).self) { try inspected.find(text: "Select organization:") }
     }
 }
 
 // MARK: - SessionExpiredView Tests
 
-final class SessionExpiredViewTests: XCTestCase {
+@MainActor
+@Suite
+struct SessionExpiredViewTests {
     private func makeState() -> AppState {
         AppState(keychain: KeychainService(serviceName: "com.claudebar.test"))
     }
 
-    func testShowsExpiredTitle() throws {
+    @Test func showsExpiredTitle() throws {
         let state = makeState()
         let view = SessionExpiredView(state: state)
         let inspected = try view.inspect()
 
-        XCTAssertNoThrow(try inspected.find(text: "Session Expired"))
+        _ = try inspected.find(text: "Session Expired")
     }
 
-    func testShowsReconnectButton() throws {
+    @Test func showsReconnectButton() throws {
         let state = makeState()
         let view = SessionExpiredView(state: state)
         let inspected = try view.inspect()
 
-        let button = try inspected.find(button: "Reconnect")
-        XCTAssertNotNil(button)
+        _ = try inspected.find(button: "Reconnect")
     }
 
-    func testShowsKeyInputField() throws {
+    @Test func showsKeyInputField() throws {
         let state = makeState()
         let view = SessionExpiredView(state: state)
         let inspected = try view.inspect()
 
-        XCTAssertNoThrow(try inspected.find(ViewType.TextField.self))
+        _ = try inspected.find(ViewType.TextField.self)
     }
 }
 
 // MARK: - RingProgressView Tests
 
-final class RingProgressViewTests: XCTestCase {
-    func testClampsProgressToZero() throws {
+@MainActor
+@Suite
+struct RingProgressViewTests {
+    @Test func clampsProgressToZero() throws {
         let view = RingProgressView(progress: -0.5, color: .green)
         let inspected = try view.inspect()
 
-        // Verify it renders (ZStack with two circles)
         let zstack = try inspected.zStack()
-        XCTAssertEqual(try zstack.fixedFrame().width, 16) // default size
+        #expect(try zstack.fixedFrame().width == 16)
     }
 
-    func testClampsProgressToOne() throws {
+    @Test func clampsProgressToOne() throws {
         let view = RingProgressView(progress: 1.5, color: .red)
-        // Just verify it doesn't crash and renders correctly
         let inspected = try view.inspect()
-        XCTAssertNoThrow(try inspected.zStack())
+        _ = try inspected.zStack()
     }
 
-    func testCustomSize() throws {
+    @Test func customSize() throws {
         let view = RingProgressView(progress: 0.5, color: .blue, size: 32)
         let inspected = try view.inspect()
         let frame = try inspected.zStack().fixedFrame()
-        XCTAssertEqual(frame.width, 32)
-        XCTAssertEqual(frame.height, 32)
+        #expect(frame.width == 32)
+        #expect(frame.height == 32)
     }
 
-    func testDefaultSize() throws {
+    @Test func defaultSize() throws {
         let view = RingProgressView(progress: 0.5, color: .green)
         let inspected = try view.inspect()
         let frame = try inspected.zStack().fixedFrame()
-        XCTAssertEqual(frame.width, 16)
-        XCTAssertEqual(frame.height, 16)
+        #expect(frame.width == 16)
+        #expect(frame.height == 16)
     }
 
-    func testContainsTwoCircles() throws {
+    @Test func containsTwoCircles() throws {
         let view = RingProgressView(progress: 0.5, color: .green)
         let inspected = try view.inspect()
         let zstack = try inspected.zStack()
 
-        // Background ring + progress arc = 2 shapes
-        XCTAssertEqual(zstack.count, 2)
+        #expect(zstack.count == 2)
     }
 }
 
 // MARK: - SettingsView Tests
 
-final class SettingsViewTests: XCTestCase {
+@MainActor
+@Suite
+struct SettingsViewTests {
     private func makeState() -> AppState {
         AppState(keychain: KeychainService(serviceName: "com.claudebar.test"))
     }
 
-    func testShowsTitle() throws {
+    @Test func showsTitle() throws {
         let state = makeState()
         let view = SettingsView(state: state)
         let inspected = try view.inspect()
 
-        XCTAssertNoThrow(try inspected.find(text: "Settings"))
+        _ = try inspected.find(text: "Settings")
     }
 
-    func testShowsDisconnectedWhenNotAuthenticated() throws {
+    @Test func showsDisconnectedWhenNotAuthenticated() throws {
         let state = makeState()
         let view = SettingsView(state: state)
         let inspected = try view.inspect()
 
-        XCTAssertNoThrow(try inspected.find(text: "Not connected"))
+        _ = try inspected.find(text: "Not connected")
     }
 
-    func testShowsConnectedWhenAuthenticated() throws {
+    @Test func showsConnectedWhenAuthenticated() throws {
         let state = makeState()
         state.sessionKey = "sk-test"
         state.orgId = "org-123"
         let view = SettingsView(state: state)
         let inspected = try view.inspect()
 
-        XCTAssertNoThrow(try inspected.find(text: "Connected"))
+        _ = try inspected.find(text: "Connected")
     }
 
-    func testShowsQuitButton() throws {
+    @Test func showsQuitButton() throws {
         let state = makeState()
         let view = SettingsView(state: state)
         let inspected = try view.inspect()
 
-        XCTAssertNoThrow(try inspected.find(button: "Quit ClaudeBar"))
+        _ = try inspected.find(button: "Quit ClaudeBar")
     }
 
-    func testShowsUpdateSessionKeyButton() throws {
+    @Test func showsUpdateSessionKeyButton() throws {
         let state = makeState()
         let view = SettingsView(state: state)
         let inspected = try view.inspect()
 
-        XCTAssertNoThrow(try inspected.find(button: "Update Session Key"))
+        _ = try inspected.find(button: "Update Session Key")
     }
 
-    func testShowsDoneButton() throws {
+    @Test func showsDoneButton() throws {
         let state = makeState()
         let view = SettingsView(state: state)
         let inspected = try view.inspect()
 
-        XCTAssertNoThrow(try inspected.find(button: "Done"))
+        _ = try inspected.find(button: "Done")
     }
 }

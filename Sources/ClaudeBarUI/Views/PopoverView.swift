@@ -1,9 +1,13 @@
 import SwiftUI
 
-struct PopoverView: View {
-    let state: AppState
+public struct PopoverView: View {
+    public let state: AppState
 
-    var body: some View {
+    public init(state: AppState) {
+        self.state = state
+    }
+
+    public var body: some View {
         VStack(spacing: 0) {
             if !state.isAuthenticated {
                 SetupView(state: state)
@@ -87,6 +91,7 @@ private struct UsageDetailView: View {
                     RoundedRectangle(cornerRadius: 6)
                         .fill(color)
                         .frame(width: geo.size.width * utilization, height: 20)
+                        .animation(.easeInOut(duration: 0.4), value: utilization)
                 }
                 .frame(height: 20)
                 Text("\(Int(utilization * 100))%")
@@ -97,8 +102,6 @@ private struct UsageDetailView: View {
         .padding(.horizontal, 16)
         .padding(.bottom, 12)
     }
-
-
 
     private func sevenDaySection(_ usage: UsageResponse) -> some View {
         VStack(alignment: .leading, spacing: 6) {
@@ -143,27 +146,31 @@ private struct UsageDetailView: View {
                     RoundedRectangle(cornerRadius: 4)
                         .fill(color)
                         .frame(width: geo.size.width * utilization)
+                        .animation(.easeInOut(duration: 0.4), value: utilization)
                 }
             }
             .frame(height: 8)
         }
     }
 
+    @ViewBuilder
     private func updateBanner(version: String, url: String) -> some View {
-        HStack(spacing: 6) {
-            Image(systemName: "arrow.up.circle.fill")
-                .foregroundStyle(.blue)
-                .font(.caption)
-            Text("v\(version) available")
-                .font(.caption2)
-            Spacer()
-            Link("Download", destination: URL(string: url)!)
-                .font(.caption2)
-                .foregroundStyle(.blue)
+        if let destination = URL(string: url) {
+            HStack(spacing: 6) {
+                Image(systemName: "arrow.up.circle.fill")
+                    .foregroundStyle(.blue)
+                    .font(.caption)
+                Text("v\(version) available")
+                    .font(.caption2)
+                Spacer()
+                Link("Download", destination: destination)
+                    .font(.caption2)
+                    .foregroundStyle(.blue)
+            }
+            .padding(.horizontal, 16)
+            .padding(.vertical, 8)
+            .background(.blue.opacity(0.08))
         }
-        .padding(.horizontal, 16)
-        .padding(.vertical, 8)
-        .background(.blue.opacity(0.08))
     }
 
     private var footer: some View {
@@ -174,12 +181,18 @@ private struct UsageDetailView: View {
                     .foregroundStyle(.tertiary)
             }
             Spacer()
-            Button("Refresh") {
-                Task { await state.refreshUsage() }
+            if state.isLoading {
+                ProgressView()
+                    .controlSize(.small)
+                    .scaleEffect(0.7)
+            } else {
+                Button("Refresh") {
+                    Task { await state.refreshUsage() }
+                }
+                .font(.caption2)
+                .buttonStyle(.plain)
+                .foregroundStyle(.blue)
             }
-            .font(.caption2)
-            .buttonStyle(.plain)
-            .foregroundStyle(.blue)
             Button("Settings") {
                 state.showingSettings = true
             }
@@ -211,31 +224,70 @@ private struct UsageDetailView: View {
         return "\(minutes)m"
     }
 
-    private func shortResetString(_ date: Date) -> String {
+    private static let shortDateFormatter: DateFormatter = {
         let formatter = DateFormatter()
         formatter.dateFormat = "EEE"
-        return formatter.string(from: date)
+        return formatter
+    }()
+
+    private func shortResetString(_ date: Date) -> String {
+        Self.shortDateFormatter.string(from: date)
     }
 }
 
-// MARK: - Setup View (first-launch auth)
+// MARK: - Shared Session Key Input
 
-struct SetupView: View {
+private struct SessionKeyInputView: View {
     let state: AppState
+    let title: String
+    let subtitle: String
+    let buttonLabel: String
+    let titleIcon: String?
+    let titleColor: Color?
+    let showQuitButton: Bool
+
     @State private var keyInput = ""
+
+    init(
+        state: AppState,
+        title: String,
+        subtitle: String,
+        buttonLabel: String,
+        titleIcon: String? = nil,
+        titleColor: Color? = nil,
+        showQuitButton: Bool = false
+    ) {
+        self.state = state
+        self.title = title
+        self.subtitle = subtitle
+        self.buttonLabel = buttonLabel
+        self.titleIcon = titleIcon
+        self.titleColor = titleColor
+        self.showQuitButton = showQuitButton
+    }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
-            Text("Setup ClaudeBar")
-                .font(.headline)
+            if let icon = titleIcon {
+                Label(title, systemImage: icon)
+                    .font(.headline)
+                    .foregroundStyle(titleColor ?? .primary)
+            } else {
+                Text(title)
+                    .font(.headline)
+            }
 
-            Text("1. Open **claude.ai** in your browser\n2. DevTools (\u{2318}\u{2325}I) \u{2192} Application \u{2192} Cookies\n3. Copy the `sessionKey` value")
+            Text(.init(subtitle))
                 .font(.caption)
                 .foregroundStyle(.secondary)
 
             TextField("Paste sessionKey here...", text: $keyInput)
                 .textFieldStyle(.roundedBorder)
                 .font(.system(size: 12, design: .monospaced))
+                .onSubmit {
+                    guard !keyInput.isEmpty, !state.isLoading else { return }
+                    Task { await state.validateAndFetchOrgs(sessionKey: keyInput) }
+                }
 
             if state.organizations.count > 1 {
                 Text("Select organization:")
@@ -262,54 +314,118 @@ struct SetupView: View {
 
             HStack {
                 Spacer()
-                Button("Connect") {
+                Button(buttonLabel) {
                     Task { await state.validateAndFetchOrgs(sessionKey: keyInput) }
                 }
                 .buttonStyle(.borderedProminent)
+                .keyboardShortcut(.defaultAction)
                 .disabled(keyInput.isEmpty || state.isLoading)
             }
 
-            Divider()
-            Button("Quit ClaudeBar") {
-                NSApplication.shared.terminate(nil)
+            if showQuitButton {
+                Divider()
+                Button("Quit ClaudeBar") {
+                    NSApplication.shared.terminate(nil)
+                }
+                .font(.caption)
+                .buttonStyle(.plain)
+                .foregroundStyle(.secondary)
             }
-            .font(.caption)
-            .buttonStyle(.plain)
-            .foregroundStyle(.secondary)
         }
         .padding(16)
+    }
+}
+
+// MARK: - Setup View (first-launch auth)
+
+public struct SetupView: View {
+    public let state: AppState
+
+    public init(state: AppState) { self.state = state }
+
+    public var body: some View {
+        SessionKeyInputView(
+            state: state,
+            title: "Setup ClaudeBar",
+            subtitle: "1. Open **claude.ai** in your browser\n2. DevTools (\u{2318}\u{2325}I) \u{2192} Application \u{2192} Cookies\n3. Copy the `sessionKey` value",
+            buttonLabel: "Connect",
+            showQuitButton: true
+        )
     }
 }
 
 // MARK: - Session Expired View
 
-struct SessionExpiredView: View {
-    let state: AppState
-    @State private var keyInput = ""
+public struct SessionExpiredView: View {
+    public let state: AppState
 
-    var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            Label("Session Expired", systemImage: "exclamationmark.triangle")
-                .font(.headline)
-                .foregroundStyle(.orange)
+    public init(state: AppState) { self.state = state }
 
-            Text("Your sessionKey has expired. Paste a new one from claude.ai cookies.")
-                .font(.caption)
-                .foregroundStyle(.secondary)
-
-            TextField("Paste new sessionKey...", text: $keyInput)
-                .textFieldStyle(.roundedBorder)
-                .font(.system(size: 12, design: .monospaced))
-
-            HStack {
-                Spacer()
-                Button("Reconnect") {
-                    Task { await state.validateAndFetchOrgs(sessionKey: keyInput) }
-                }
-                .buttonStyle(.borderedProminent)
-                .disabled(keyInput.isEmpty || state.isLoading)
-            }
-        }
-        .padding(16)
+    public var body: some View {
+        SessionKeyInputView(
+            state: state,
+            title: "Session Expired",
+            subtitle: "Your sessionKey has expired. Paste a new one from claude.ai cookies.",
+            buttonLabel: "Reconnect",
+            titleIcon: "exclamationmark.triangle",
+            titleColor: .orange
+        )
     }
 }
+
+// MARK: - Previews
+
+private extension AppState {
+    static var previewWithUsage: AppState {
+        let state = AppState(keychain: KeychainService(serviceName: "com.claudebar.preview"))
+        state.sessionKey = "fake-key"
+        state.orgId = "fake-org"
+        state.usage = UsageResponse(
+            fiveHour: WindowUsage(utilization: 0.42, resetsAt: Date().addingTimeInterval(3600 * 2)),
+            sevenDay: WindowUsage(utilization: 0.65, resetsAt: Date().addingTimeInterval(86400 * 3)),
+            sevenDaySonnet: WindowUsage(utilization: 0.30, resetsAt: Date().addingTimeInterval(86400 * 3)),
+            sevenDayOpus: WindowUsage(utilization: 0.78, resetsAt: Date().addingTimeInterval(86400 * 3)),
+            extraUsage: ExtraUsage(isEnabled: true, monthlyLimit: 200, usedCredits: 45, utilization: 0.225)
+        )
+        state.lastUpdated = Date()
+        return state
+    }
+
+    static var previewNotAuthenticated: AppState {
+        AppState(keychain: KeychainService(serviceName: "com.claudebar.preview"))
+    }
+
+    static var previewSessionExpired: AppState {
+        let state = AppState(keychain: KeychainService(serviceName: "com.claudebar.preview"))
+        state.error = .sessionExpired
+        state.sessionKey = "fake-key"
+        state.orgId = "fake-org"
+        return state
+    }
+}
+
+#Preview("Usage Detail") {
+    PopoverView(state: .previewWithUsage)
+}
+
+#Preview("Setup") {
+    PopoverView(state: .previewNotAuthenticated)
+}
+
+#Preview("Session Expired") {
+    PopoverView(state: .previewSessionExpired)
+}
+
+#Preview("Session Key Input") {
+    SessionKeyInputView(
+        state: .previewNotAuthenticated,
+        title: "Custom Title",
+        subtitle: "Custom subtitle with **markdown** support",
+        buttonLabel: "Submit",
+        titleIcon: "key.fill",
+        titleColor: .blue,
+        showQuitButton: true
+    )
+    .frame(width: 320)
+}
+

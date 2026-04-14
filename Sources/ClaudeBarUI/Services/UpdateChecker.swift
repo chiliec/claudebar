@@ -1,15 +1,15 @@
 import Foundation
 
-struct UpdateChecker {
-    static let repo = "chiliec/claudebar"
-    static let currentVersion = "0.0.3"
+public struct UpdateChecker {
+    public static let repo = "chiliec/claudebar"
+    public static let currentVersion = "0.0.3"
 
-    struct Release: Codable {
-        let tagName: String
-        let htmlUrl: String
+    public struct Release: Codable {
+        public let tagName: String
+        public let htmlUrl: String
     }
 
-    static func checkForUpdate() async -> (version: String, url: String)? {
+    public static func checkForUpdate() async -> (version: String, url: String)? {
         let urlString = "https://api.github.com/repos/\(repo)/releases/latest"
         guard let url = URL(string: urlString) else { return nil }
 
@@ -32,7 +32,7 @@ struct UpdateChecker {
         return nil
     }
 
-    static func compareVersions(_ a: String, isNewerThan b: String) -> Bool {
+    public static func compareVersions(_ a: String, isNewerThan b: String) -> Bool {
         let partsA = a.split(separator: ".").compactMap { Int($0) }
         let partsB = b.split(separator: ".").compactMap { Int($0) }
         for i in 0..<max(partsA.count, partsB.count) {

@@ -14,7 +14,7 @@ mkdir -p "$BUNDLE_DIR/Contents/MacOS"
 mkdir -p "$BUNDLE_DIR/Contents/Resources"
 
 cp "$BUILD_DIR/$APP_NAME" "$BUNDLE_DIR/Contents/MacOS/"
-cp Sources/Info.plist "$BUNDLE_DIR/Contents/"
+cp Sources/App/Info.plist "$BUNDLE_DIR/Contents/"
 
 echo "Signing..."
 codesign --force --sign "Apple Development: Vladimir Babin (8FNR8DGE9N)" "$BUNDLE_DIR"

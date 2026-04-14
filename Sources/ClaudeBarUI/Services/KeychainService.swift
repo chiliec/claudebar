@@ -1,14 +1,14 @@
 import Foundation
 import Security
 
-struct KeychainService {
-    let serviceName: String
+public struct KeychainService {
+    public let serviceName: String
 
-    init(serviceName: String = "com.claudebar") {
+    public init(serviceName: String = "com.claudebar") {
         self.serviceName = serviceName
     }
 
-    func save(account: String, value: String) throws {
+    public func save(account: String, value: String) throws {
         guard let data = value.data(using: .utf8) else {
             throw KeychainError.encodingFailed
         }
@@ -30,7 +30,7 @@ struct KeychainService {
         }
     }
 
-    func retrieve(account: String) throws -> String? {
+    public func retrieve(account: String) throws -> String? {
         let query: [String: Any] = [
             kSecClass as String: kSecClassGenericPassword,
             kSecAttrService as String: serviceName,
@@ -49,7 +49,7 @@ struct KeychainService {
         return String(data: data, encoding: .utf8)
     }
 
-    func delete(account: String) throws {
+    public func delete(account: String) throws {
         let query: [String: Any] = [
             kSecClass as String: kSecClassGenericPassword,
             kSecAttrService as String: serviceName,
@@ -63,7 +63,7 @@ struct KeychainService {
     }
 }
 
-enum KeychainError: Error {
+public enum KeychainError: Error {
     case encodingFailed
     case saveFailed(OSStatus)
     case retrieveFailed(OSStatus)

@@ -1,24 +1,26 @@
-import XCTest
-@testable import ClaudeBar
+import Testing
+@testable import ClaudeBarUI
 
-final class ClaudeAPIClientTests: XCTestCase {
-    func testBuildUsageRequest() throws {
+@MainActor
+@Suite
+struct ClaudeAPIClientTests {
+    @Test func buildUsageRequest() throws {
         let client = ClaudeAPIClient(sessionKey: "sk-test", orgId: "org-123")
-        let request = client.buildUsageRequest()
+        let request = try client.buildUsageRequest()
 
-        XCTAssertEqual(request.url?.absoluteString, "https://claude.ai/api/organizations/org-123/usage")
-        XCTAssertEqual(request.value(forHTTPHeaderField: "Cookie"), "sessionKey=sk-test")
-        XCTAssertEqual(request.httpMethod, "GET")
+        #expect(request.url?.absoluteString == "https://claude.ai/api/organizations/org-123/usage")
+        #expect(request.value(forHTTPHeaderField: "Cookie") == "sessionKey=sk-test")
+        #expect(request.httpMethod == "GET")
     }
 
-    func testBuildOrganizationsRequest() {
-        let request = ClaudeAPIClient.buildOrganizationsRequest(sessionKey: "sk-test")
+    @Test func buildOrganizationsRequest() throws {
+        let request = try ClaudeAPIClient.buildOrganizationsRequest(sessionKey: "sk-test")
 
-        XCTAssertEqual(request.url?.absoluteString, "https://claude.ai/api/organizations")
-        XCTAssertEqual(request.value(forHTTPHeaderField: "Cookie"), "sessionKey=sk-test")
+        #expect(request.url?.absoluteString == "https://claude.ai/api/organizations")
+        #expect(request.value(forHTTPHeaderField: "Cookie") == "sessionKey=sk-test")
     }
 
-    func testParseUsageResponse() throws {
+    @Test func parseUsageResponse() throws {
         let json = """
         {
           "five_hour": { "utilization": 0.73, "resets_at": "2026-04-12T15:30:00.000Z" },
@@ -29,12 +31,12 @@ final class ClaudeAPIClientTests: XCTestCase {
         """.data(using: .utf8)!
 
         let usage = try ClaudeAPIClient.parseUsageResponse(data: json)
-        XCTAssertEqual(usage.fiveHour?.utilization, 0.73)
-        XCTAssertEqual(usage.sevenDay.utilization, 0.31)
-        XCTAssertEqual(usage.sevenDaySonnet?.utilization, 0.20)
+        #expect(usage.fiveHour?.utilization == 0.73)
+        #expect(usage.sevenDay.utilization == 0.31)
+        #expect(usage.sevenDaySonnet?.utilization == 0.20)
     }
 
-    func testParseOrganizationsResponse() throws {
+    @Test func parseOrganizationsResponse() throws {
         let json = """
         [
           { "uuid": "org-abc", "name": "Personal" },
@@ -43,8 +45,8 @@ final class ClaudeAPIClientTests: XCTestCase {
         """.data(using: .utf8)!
 
         let orgs = try ClaudeAPIClient.parseOrganizationsResponse(data: json)
-        XCTAssertEqual(orgs.count, 2)
-        XCTAssertEqual(orgs[0].uuid, "org-abc")
-        XCTAssertEqual(orgs[1].name, "Work")
+        #expect(orgs.count == 2)
+        #expect(orgs[0].uuid == "org-abc")
+        #expect(orgs[1].name == "Work")
     }
 }

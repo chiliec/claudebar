@@ -1,36 +1,43 @@
-import XCTest
-@testable import ClaudeBar
+import Testing
+@testable import ClaudeBarUI
 
-final class KeychainServiceTests: XCTestCase {
+@Suite(.serialized)
+struct KeychainServiceTests {
     let service = KeychainService(serviceName: "com.claudebar.test")
 
-    override func tearDown() {
+    private func cleanup() {
         try? service.delete(account: "sessionKey")
         try? service.delete(account: "orgId")
     }
 
-    func testSaveAndRetrieve() throws {
+    @Test func saveAndRetrieve() throws {
+        cleanup()
         try service.save(account: "sessionKey", value: "sk-ant-sid01-test123")
         let retrieved = try service.retrieve(account: "sessionKey")
-        XCTAssertEqual(retrieved, "sk-ant-sid01-test123")
+        #expect(retrieved == "sk-ant-sid01-test123")
+        cleanup()
     }
 
-    func testRetrieveNonExistent() {
+    @Test func retrieveNonExistent() {
+        cleanup()
         let result = try? service.retrieve(account: "nonexistent")
-        XCTAssertNil(result)
+        #expect(result == nil)
     }
 
-    func testOverwriteExisting() throws {
+    @Test func overwriteExisting() throws {
+        cleanup()
         try service.save(account: "sessionKey", value: "old-value")
         try service.save(account: "sessionKey", value: "new-value")
         let retrieved = try service.retrieve(account: "sessionKey")
-        XCTAssertEqual(retrieved, "new-value")
+        #expect(retrieved == "new-value")
+        cleanup()
     }
 
-    func testDelete() throws {
+    @Test func delete() throws {
+        cleanup()
         try service.save(account: "orgId", value: "abc-123")
         try service.delete(account: "orgId")
         let result = try? service.retrieve(account: "orgId")
-        XCTAssertNil(result)
+        #expect(result == nil)
     }
 }

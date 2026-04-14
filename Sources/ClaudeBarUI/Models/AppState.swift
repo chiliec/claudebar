@@ -1,67 +1,74 @@
 import SwiftUI
 
+@MainActor
 @Observable
-final class AppState {
+public final class AppState {
     // MARK: - Auth State
-    var sessionKey: String?
-    var orgId: String?
-    var organizations: [Organization] = []
-    var isAuthenticated: Bool { sessionKey != nil && orgId != nil }
+    public var sessionKey: String?
+    public var orgId: String?
+    public var organizations: [Organization] = []
+    public var isAuthenticated: Bool { sessionKey != nil && orgId != nil }
 
     // MARK: - Usage State
-    var usage: UsageResponse?
-    var lastUpdated: Date?
-    var isLoading = false
-    var error: AppError?
+    public var usage: UsageResponse?
+    public var lastUpdated: Date?
+    public var isLoading = false
+    public var error: AppError?
 
     // MARK: - UI State
-    var showingSettings = false
+    public var showingSettings = false
 
     // MARK: - Update State
-    var availableUpdate: (version: String, url: String)?
+    public var availableUpdate: (version: String, url: String)?
 
     // MARK: - Services
     private let keychain: KeychainService
     private var pollTimer: Timer?
-    var pollInterval: TimeInterval = 300 // 5 minutes
+    public var pollInterval: TimeInterval = 300 // 5 minutes
 
-    init(keychain: KeychainService = KeychainService()) {
+    public init(keychain: KeychainService = KeychainService()) {
         self.keychain = keychain
     }
 
     // MARK: - Computed Display Values
 
-    var menuBarText: String {
+    public var menuBarText: String {
         guard let usage else { return "—%" }
         let pct = Int((usage.fiveHour?.utilization ?? usage.sevenDay.utilization) * 100)
         return "\(pct)%"
     }
 
-    var menuBarUtilization: Double {
+    public var menuBarUtilization: Double {
         usage?.fiveHour?.utilization ?? usage?.sevenDay.utilization ?? 0
     }
 
-    var usageColor: UsageColor {
+    public var usageColor: UsageColor {
         UsageColor.forUtilization(menuBarUtilization)
     }
 
     // MARK: - Lifecycle
 
-    func loadCredentials() {
-        sessionKey = try? keychain.retrieve(account: "sessionKey")
-        orgId = try? keychain.retrieve(account: "orgId")
+    // Store both values in a single keychain item to avoid multiple password prompts on launch
+    private static let credentialsAccount = "credentials"
+    private static let credentialsSeparator: Character = "\n"
+
+    public func loadCredentials() {
+        guard let stored = try? keychain.retrieve(account: Self.credentialsAccount) else { return }
+        let parts = stored.split(separator: Self.credentialsSeparator, maxSplits: 1)
+        guard parts.count == 2 else { return }
+        sessionKey = String(parts[0])
+        orgId = String(parts[1])
     }
 
-    func saveCredentials(sessionKey: String, orgId: String) throws {
-        try keychain.save(account: "sessionKey", value: sessionKey)
-        try keychain.save(account: "orgId", value: orgId)
+    public func saveCredentials(sessionKey: String, orgId: String) throws {
+        let combined = "\(sessionKey)\(Self.credentialsSeparator)\(orgId)"
+        try keychain.save(account: Self.credentialsAccount, value: combined)
         self.sessionKey = sessionKey
         self.orgId = orgId
     }
 
-    func clearCredentials() {
-        try? keychain.delete(account: "sessionKey")
-        try? keychain.delete(account: "orgId")
+    public func clearCredentials() {
+        try? keychain.delete(account: Self.credentialsAccount)
         sessionKey = nil
         orgId = nil
         usage = nil
@@ -70,7 +77,7 @@ final class AppState {
 
     // MARK: - API Calls
 
-    func validateAndFetchOrgs(sessionKey: String) async {
+    public func validateAndFetchOrgs(sessionKey: String) async {
         isLoading = true
         error = nil
         self.sessionKey = sessionKey
@@ -78,7 +85,7 @@ final class AppState {
             organizations = try await ClaudeAPIClient.fetchOrganizations(sessionKey: sessionKey)
             if organizations.count == 1 {
                 try saveCredentials(sessionKey: sessionKey, orgId: organizations[0].uuid)
-                await refreshUsage()
+                startPolling()
             }
         } catch let apiError as APIError {
             error = .api(apiError)
@@ -90,17 +97,17 @@ final class AppState {
         isLoading = false
     }
 
-    func selectOrganization(_ org: Organization) async {
+    public func selectOrganization(_ org: Organization) async {
         guard let sessionKey else { return }
         do {
             try saveCredentials(sessionKey: sessionKey, orgId: org.uuid)
-            await refreshUsage()
+            startPolling()
         } catch {
             self.error = .network(error.localizedDescription)
         }
     }
 
-    func refreshUsage() async {
+    public func refreshUsage() async {
         guard let sessionKey, let orgId else { return }
         isLoading = true
         error = nil
@@ -121,35 +128,35 @@ final class AppState {
 
     // MARK: - Polling
 
-    func startPolling() {
+    public func startPolling() {
         stopPolling()
         pollTimer = Timer.scheduledTimer(withTimeInterval: pollInterval, repeats: true) { [weak self] _ in
             guard let self else { return }
-            Task { await self.refreshUsage() }
+            Task { @MainActor in await self.refreshUsage() }
         }
         // Also fetch immediately
         Task { await refreshUsage() }
     }
 
-    func stopPolling() {
+    public func stopPolling() {
         pollTimer?.invalidate()
         pollTimer = nil
     }
 
     // MARK: - Update Check
 
-    func checkForUpdate() async {
+    public func checkForUpdate() async {
         availableUpdate = await UpdateChecker.checkForUpdate()
     }
 }
 
-enum AppError: Equatable {
+public enum AppError: Equatable {
     case api(APIError)
     case sessionExpired
     case rateLimited
     case network(String)
 
-    var message: String {
+    public var message: String {
         switch self {
         case .sessionExpired: return "Session expired — update your key"
         case .rateLimited: return "Rate limited — will retry"

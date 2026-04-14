@@ -11,7 +11,7 @@ ClaudeBar is a native SwiftUI macOS menu bar app (macOS 14+) that displays Claud
 ```bash
 ./scripts/run.sh                     # Build + sign + run (development)
 ./scripts/bundle.sh                  # Build release + sign + create .app bundle
-swift test                           # Run all tests (59 tests)
+swift test                           # Run all tests (65 tests)
 swift test --filter AppStateTests    # Run one test suite
 swift test --filter ClaudeBarTests.AppStateTests.testMenuBarTextWithNoUsage  # Run single test
 ```
@@ -36,9 +36,11 @@ Both scripts sign with `"Apple Development: Vladimir Babin (8FNR8DGE9N)"`. Ad-ho
 
 ## SPM Specifics
 
-- Uses `-parse-as-library` unsafe flag in Package.swift so `@main` works in an executable target (instead of requiring `main.swift`)
-- `Sources/Info.plist` and `Sources/ClaudeBar.entitlements` are excluded from the Swift target — only used by the bundle script
+- Two targets: `ClaudeBarUI` (library with all models/services/views) and `ClaudeBar` (thin executable with `@main` entry point). This split enables SwiftUI `#Preview` support — previews don't work in executable targets without `ENABLE_DEBUG_DYLIB`
+- Uses `-parse-as-library` unsafe flag in Package.swift so `@main` works in the executable target (instead of requiring `main.swift`)
+- `Sources/App/Info.plist` and `Sources/App/ClaudeBar.entitlements` are excluded from the Swift target — only used by the bundle script
 - ViewInspector is a test-only dependency for SwiftUI view introspection
+- All types in `ClaudeBarUI` are `public` — tests import via `@testable import ClaudeBarUI`
 
 ## API Details
 

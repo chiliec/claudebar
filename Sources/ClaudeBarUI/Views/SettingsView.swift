@@ -1,11 +1,13 @@
 import SwiftUI
 import ServiceManagement
 
-struct SettingsView: View {
-    let state: AppState
+public struct SettingsView: View {
+    public let state: AppState
+
+    public init(state: AppState) { self.state = state }
     @Environment(\.dismiss) private var dismiss
 
-    var body: some View {
+    public var body: some View {
         VStack(alignment: .leading, spacing: 16) {
             HStack {
                 Text("Settings")
@@ -78,4 +80,15 @@ struct LaunchAtLoginToggle: View {
                 }
             }
     }
+}
+
+#Preview("Settings - Connected") {
+    let state = AppState(keychain: KeychainService(serviceName: "com.claudebar.preview"))
+    state.sessionKey = "fake-key"
+    state.orgId = "fake-org"
+    return SettingsView(state: state)
+}
+
+#Preview("Settings - Disconnected") {
+    SettingsView(state: AppState(keychain: KeychainService(serviceName: "com.claudebar.preview")))
 }

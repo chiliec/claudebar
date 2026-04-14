@@ -1,7 +1,9 @@
-import XCTest
-@testable import ClaudeBar
+import Testing
+@testable import ClaudeBarUI
 
-final class AppStateTests: XCTestCase {
+@MainActor
+@Suite(.serialized)
+struct AppStateTests {
     private func makeState() -> AppState {
         let state = AppState(keychain: KeychainService(serviceName: "com.claudebar.test"))
         // Clean slate
@@ -11,43 +13,43 @@ final class AppStateTests: XCTestCase {
 
     // MARK: - Authentication State
 
-    func testInitialStateIsNotAuthenticated() {
+    @Test func initialStateIsNotAuthenticated() {
         let state = makeState()
-        XCTAssertFalse(state.isAuthenticated)
-        XCTAssertNil(state.sessionKey)
-        XCTAssertNil(state.orgId)
+        #expect(!state.isAuthenticated)
+        #expect(state.sessionKey == nil)
+        #expect(state.orgId == nil)
     }
 
-    func testIsAuthenticatedRequiresBothKeys() {
+    @Test func isAuthenticatedRequiresBothKeys() {
         let state = makeState()
 
         state.sessionKey = "sk-test"
-        XCTAssertFalse(state.isAuthenticated, "Should not be authenticated with only sessionKey")
+        #expect(!state.isAuthenticated, "Should not be authenticated with only sessionKey")
 
         state.orgId = "org-123"
-        XCTAssertTrue(state.isAuthenticated, "Should be authenticated with both keys")
+        #expect(state.isAuthenticated, "Should be authenticated with both keys")
     }
 
-    func testSaveAndLoadCredentials() throws {
+    @Test func saveAndLoadCredentials() throws {
         let state = makeState()
         try state.saveCredentials(sessionKey: "sk-ant-test", orgId: "org-abc")
 
-        XCTAssertEqual(state.sessionKey, "sk-ant-test")
-        XCTAssertEqual(state.orgId, "org-abc")
-        XCTAssertTrue(state.isAuthenticated)
+        #expect(state.sessionKey == "sk-ant-test")
+        #expect(state.orgId == "org-abc")
+        #expect(state.isAuthenticated)
 
         // Create a new state with the same keychain to verify persistence
         let state2 = AppState(keychain: KeychainService(serviceName: "com.claudebar.test"))
         state2.loadCredentials()
-        XCTAssertEqual(state2.sessionKey, "sk-ant-test")
-        XCTAssertEqual(state2.orgId, "org-abc")
-        XCTAssertTrue(state2.isAuthenticated)
+        #expect(state2.sessionKey == "sk-ant-test")
+        #expect(state2.orgId == "org-abc")
+        #expect(state2.isAuthenticated)
 
         // Cleanup
         state2.clearCredentials()
     }
 
-    func testClearCredentialsResetsState() throws {
+    @Test func clearCredentialsResetsState() throws {
         let state = makeState()
         try state.saveCredentials(sessionKey: "sk-test", orgId: "org-123")
         state.usage = UsageResponse(
@@ -59,164 +61,160 @@ final class AppStateTests: XCTestCase {
 
         state.clearCredentials()
 
-        XCTAssertNil(state.sessionKey)
-        XCTAssertNil(state.orgId)
-        XCTAssertNil(state.usage)
-        XCTAssertTrue(state.organizations.isEmpty)
-        XCTAssertFalse(state.isAuthenticated)
+        #expect(state.sessionKey == nil)
+        #expect(state.orgId == nil)
+        #expect(state.usage == nil)
+        #expect(state.organizations.isEmpty)
+        #expect(!state.isAuthenticated)
     }
 
     // MARK: - Menu Bar Display Values
 
-    func testMenuBarTextWithNoUsage() {
+    @Test func menuBarTextWithNoUsage() {
         let state = makeState()
-        XCTAssertEqual(state.menuBarText, "—%")
+        #expect(state.menuBarText == "—%")
     }
 
-    func testMenuBarTextWithFiveHourUsage() {
+    @Test func menuBarTextWithFiveHourUsage() {
         let state = makeState()
         state.usage = UsageResponse(
             fiveHour: WindowUsage(utilization: 0.73, resetsAt: nil),
             sevenDay: WindowUsage(utilization: 0.3, resetsAt: nil),
             sevenDaySonnet: nil, sevenDayOpus: nil, extraUsage: nil
         )
-        XCTAssertEqual(state.menuBarText, "73%")
+        #expect(state.menuBarText == "73%")
     }
 
-    func testMenuBarTextFallsBackToSevenDay() {
+    @Test func menuBarTextFallsBackToSevenDay() {
         let state = makeState()
         state.usage = UsageResponse(
             fiveHour: nil,
             sevenDay: WindowUsage(utilization: 0.42, resetsAt: nil),
             sevenDaySonnet: nil, sevenDayOpus: nil, extraUsage: nil
         )
-        XCTAssertEqual(state.menuBarText, "42%")
+        #expect(state.menuBarText == "42%")
     }
 
-    func testMenuBarTextAtZero() {
+    @Test func menuBarTextAtZero() {
         let state = makeState()
         state.usage = UsageResponse(
             fiveHour: WindowUsage(utilization: 0.0, resetsAt: nil),
             sevenDay: WindowUsage(utilization: 0.0, resetsAt: nil),
             sevenDaySonnet: nil, sevenDayOpus: nil, extraUsage: nil
         )
-        XCTAssertEqual(state.menuBarText, "0%")
+        #expect(state.menuBarText == "0%")
     }
 
-    func testMenuBarTextAtFull() {
+    @Test func menuBarTextAtFull() {
         let state = makeState()
         state.usage = UsageResponse(
             fiveHour: WindowUsage(utilization: 1.0, resetsAt: nil),
             sevenDay: WindowUsage(utilization: 0.5, resetsAt: nil),
             sevenDaySonnet: nil, sevenDayOpus: nil, extraUsage: nil
         )
-        XCTAssertEqual(state.menuBarText, "100%")
+        #expect(state.menuBarText == "100%")
     }
 
     // MARK: - Utilization & Color
 
-    func testMenuBarUtilizationWithNoUsage() {
+    @Test func menuBarUtilizationWithNoUsage() {
         let state = makeState()
-        XCTAssertEqual(state.menuBarUtilization, 0)
+        #expect(state.menuBarUtilization == 0)
     }
 
-    func testMenuBarUtilizationPrefersFiveHour() {
+    @Test func menuBarUtilizationPrefersFiveHour() {
         let state = makeState()
         state.usage = UsageResponse(
             fiveHour: WindowUsage(utilization: 0.8, resetsAt: nil),
             sevenDay: WindowUsage(utilization: 0.2, resetsAt: nil),
             sevenDaySonnet: nil, sevenDayOpus: nil, extraUsage: nil
         )
-        XCTAssertEqual(state.menuBarUtilization, 0.8)
+        #expect(state.menuBarUtilization == 0.8)
     }
 
-    func testUsageColorGreen() {
+    @Test func usageColorGreen() {
         let state = makeState()
         state.usage = UsageResponse(
             fiveHour: WindowUsage(utilization: 0.3, resetsAt: nil),
             sevenDay: WindowUsage(utilization: 0.1, resetsAt: nil),
             sevenDaySonnet: nil, sevenDayOpus: nil, extraUsage: nil
         )
-        XCTAssertEqual(state.usageColor, .green)
+        #expect(state.usageColor == .green)
     }
 
-    func testUsageColorYellow() {
+    @Test func usageColorYellow() {
         let state = makeState()
         state.usage = UsageResponse(
             fiveHour: WindowUsage(utilization: 0.6, resetsAt: nil),
             sevenDay: WindowUsage(utilization: 0.1, resetsAt: nil),
             sevenDaySonnet: nil, sevenDayOpus: nil, extraUsage: nil
         )
-        XCTAssertEqual(state.usageColor, .yellow)
+        #expect(state.usageColor == .yellow)
     }
 
-    func testUsageColorOrange() {
+    @Test func usageColorOrange() {
         let state = makeState()
         state.usage = UsageResponse(
             fiveHour: WindowUsage(utilization: 0.85, resetsAt: nil),
             sevenDay: WindowUsage(utilization: 0.1, resetsAt: nil),
             sevenDaySonnet: nil, sevenDayOpus: nil, extraUsage: nil
         )
-        XCTAssertEqual(state.usageColor, .orange)
+        #expect(state.usageColor == .orange)
     }
 
-    func testUsageColorRed() {
+    @Test func usageColorRed() {
         let state = makeState()
         state.usage = UsageResponse(
             fiveHour: WindowUsage(utilization: 0.95, resetsAt: nil),
             sevenDay: WindowUsage(utilization: 0.1, resetsAt: nil),
             sevenDaySonnet: nil, sevenDayOpus: nil, extraUsage: nil
         )
-        XCTAssertEqual(state.usageColor, .red)
+        #expect(state.usageColor == .red)
     }
 
     // MARK: - Error Messages
 
-    func testAppErrorMessages() {
-        XCTAssertEqual(AppError.sessionExpired.message, "Session expired — update your key")
-        XCTAssertEqual(AppError.rateLimited.message, "Rate limited — will retry")
-        XCTAssertEqual(AppError.network("Connection failed").message, "Connection failed")
-        XCTAssertEqual(AppError.api(.httpError(500)).message, "API error: httpError(500)")
+    @Test func appErrorMessages() {
+        #expect(AppError.sessionExpired.message == "Session expired — update your key")
+        #expect(AppError.rateLimited.message == "Rate limited — will retry")
+        #expect(AppError.network("Connection failed").message == "Connection failed")
+        #expect(AppError.api(.httpError(500)).message == "API error: httpError(500)")
     }
 
     // MARK: - Organization Selection
 
-    func testSessionKeyRetainedForOrgSelection() {
+    @Test func sessionKeyRetainedForOrgSelection() {
         let state = makeState()
-        // Simulate what validateAndFetchOrgs does when multiple orgs are returned:
-        // it should store the sessionKey so selectOrganization can use it.
         state.sessionKey = "sk-ant-multi-org"
         state.organizations = [
             Organization(uuid: "org-1", name: "Personal", capabilities: nil),
             Organization(uuid: "org-2", name: "Work", capabilities: nil),
         ]
 
-        // sessionKey must be available for selectOrganization to proceed
-        XCTAssertEqual(state.sessionKey, "sk-ant-multi-org")
-        XCTAssertFalse(state.isAuthenticated, "Not yet authenticated until org is selected")
+        #expect(state.sessionKey == "sk-ant-multi-org")
+        #expect(!state.isAuthenticated, "Not yet authenticated until org is selected")
     }
 
-    func testSelectOrganizationSavesCredentials() throws {
+    @Test func selectOrganizationSavesCredentials() throws {
         let state = makeState()
         state.sessionKey = "sk-ant-test"
 
-        // Directly test saveCredentials (selectOrganization calls this)
         try state.saveCredentials(sessionKey: "sk-ant-test", orgId: "org-2")
 
-        XCTAssertEqual(state.sessionKey, "sk-ant-test")
-        XCTAssertEqual(state.orgId, "org-2")
-        XCTAssertTrue(state.isAuthenticated)
+        #expect(state.sessionKey == "sk-ant-test")
+        #expect(state.orgId == "org-2")
+        #expect(state.isAuthenticated)
 
         state.clearCredentials()
     }
 
     // MARK: - Initial UI State
 
-    func testInitialLoadingState() {
+    @Test func initialLoadingState() {
         let state = makeState()
-        XCTAssertFalse(state.isLoading)
-        XCTAssertNil(state.error)
-        XCTAssertNil(state.lastUpdated)
-        XCTAssertFalse(state.showingSettings)
+        #expect(!state.isLoading)
+        #expect(state.error == nil)
+        #expect(state.lastUpdated == nil)
+        #expect(!state.showingSettings)
     }
 }

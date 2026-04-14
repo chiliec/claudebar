@@ -1,4 +1,5 @@
 import SwiftUI
+import ClaudeBarUI
 
 @main
 struct ClaudeBarApp: App {
