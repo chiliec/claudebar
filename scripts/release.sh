@@ -47,7 +47,7 @@ gh release create "v$VERSION" "$ZIP_FILE" \
 Download `ClaudeBar.zip`, unzip, then run:
 
 ```bash
-xattr -c -r ClaudeBar.app
+xattr -d com.apple.quarantine ClaudeBar.app
 mv ClaudeBar.app /Applications/
 ```
 NOTES
