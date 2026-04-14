@@ -18,6 +18,17 @@ swift test --filter ClaudeBarTests.AppStateTests.testMenuBarTextWithNoUsage  # R
 
 **Do not use `swift run`** — the binary must be code-signed before launch (Keychain + SMAppService require it). Use `./scripts/run.sh` instead.
 
+## App Icon
+
+The icon is generated programmatically via `scripts/generate-icon.swift` using CoreGraphics — a teal starburst inspired by the Claude logo. To regenerate:
+
+```bash
+swift scripts/generate-icon.swift
+iconutil -c icns .build/ClaudeBar.iconset -o Sources/Resources/AppIcon.icns
+```
+
+The `.icns` is copied into `Contents/Resources/` by all bundle scripts. `Info.plist` references it via `CFBundleIconFile`.
+
 ## Code Signing
 
 Both scripts sign with `"Apple Development: Vladimir Babin (8FNR8DGE9N)"`. Ad-hoc signing (`-s -`) causes Keychain password prompts on every rebuild because macOS can't match a stable identity. If the signing identity changes, update both `scripts/run.sh` and `scripts/bundle.sh`.
@@ -37,8 +48,7 @@ Both scripts sign with `"Apple Development: Vladimir Babin (8FNR8DGE9N)"`. Ad-ho
 ## SPM Specifics
 
 - Two targets: `ClaudeBarUI` (library with all models/services/views) and `ClaudeBar` (thin executable with `@main` entry point). This split enables SwiftUI `#Preview` support — previews don't work in executable targets without `ENABLE_DEBUG_DYLIB`
-- Uses `-parse-as-library` unsafe flag in Package.swift so `@main` works in the executable target (instead of requiring `main.swift`)
-- `Sources/App/Info.plist` and `Sources/App/ClaudeBar.entitlements` are excluded from the Swift target — only used by the bundle script
+- `Sources/ClaudeBar/Info.plist` and `Sources/ClaudeBar/ClaudeBar.entitlements` are excluded from the Swift target — only used by the bundle script
 - ViewInspector is a test-only dependency for SwiftUI view introspection
 - All types in `ClaudeBarUI` are `public` — tests import via `@testable import ClaudeBarUI`
 

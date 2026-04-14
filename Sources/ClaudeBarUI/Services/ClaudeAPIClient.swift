@@ -15,7 +15,7 @@ public struct ClaudeAPIClient {
 
     public func buildUsageRequest() throws -> URLRequest {
         guard let url = URL(string: "\(Self.baseURL)/api/organizations/\(orgId)/usage") else {
-            throw APIError.invalidResponse
+            throw APIError.invalidURL
         }
         var request = URLRequest(url: url)
         request.httpMethod = "GET"
@@ -25,7 +25,7 @@ public struct ClaudeAPIClient {
 
     public static func buildOrganizationsRequest(sessionKey: String) throws -> URLRequest {
         guard let url = URL(string: "\(baseURL)/api/organizations") else {
-            throw APIError.invalidResponse
+            throw APIError.invalidURL
         }
         var request = URLRequest(url: url)
         request.httpMethod = "GET"
@@ -83,6 +83,7 @@ public struct ClaudeAPIClient {
 }
 
 public enum APIError: Error, Equatable {
+    case invalidURL
     case invalidResponse
     case sessionExpired
     case rateLimited

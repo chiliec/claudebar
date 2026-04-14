@@ -9,8 +9,8 @@ ZIP_FILE="$BUILD_DIR/$APP_NAME-v$VERSION.zip"
 SIGN_IDENTITY="Apple Development: Vladimir Babin (8FNR8DGE9N)"
 
 echo "==> Updating version to $VERSION"
-sed -i '' "s/static let currentVersion = \".*\"/static let currentVersion = \"$VERSION\"/" Sources/Services/UpdateChecker.swift
-sed -i '' "s/<string>[0-9]*\.[0-9]*\.[0-9]*<\/string>/<string>$VERSION<\/string>/g" Sources/Info.plist
+sed -i '' "s/static let currentVersion = \".*\"/static let currentVersion = \"$VERSION\"/" Sources/ClaudeBarUI/Services/UpdateChecker.swift
+sed -i '' "s/<string>[0-9]*\.[0-9]*\.[0-9]*<\/string>/<string>$VERSION<\/string>/g" Sources/ClaudeBar/Info.plist
 
 echo "==> Building release"
 swift build -c release
@@ -20,7 +20,7 @@ rm -rf "$BUNDLE_DIR"
 mkdir -p "$BUNDLE_DIR/Contents/MacOS"
 mkdir -p "$BUNDLE_DIR/Contents/Resources"
 cp "$BUILD_DIR/$APP_NAME" "$BUNDLE_DIR/Contents/MacOS/"
-cp Sources/Info.plist "$BUNDLE_DIR/Contents/"
+cp Sources/ClaudeBar/Info.plist "$BUNDLE_DIR/Contents/"
 cp Sources/Resources/AppIcon.icns "$BUNDLE_DIR/Contents/Resources/"
 
 echo "==> Signing"
@@ -34,7 +34,7 @@ echo "==> Running tests"
 swift test 2>&1 | tail -3
 
 echo "==> Committing version bump"
-git add Sources/Services/UpdateChecker.swift Sources/Info.plist
+git add Sources/ClaudeBarUI/Services/UpdateChecker.swift Sources/ClaudeBar/Info.plist
 git diff --cached --quiet || git commit -m "release: v$VERSION"
 git tag -f "v$VERSION"
 git push origin main --tags --force

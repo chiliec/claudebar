@@ -50,7 +50,7 @@ public final class AppState {
 
     // Store both values in a single keychain item to avoid multiple password prompts on launch
     private static let credentialsAccount = "credentials"
-    private static let credentialsSeparator: Character = "\n"
+    private static let credentialsSeparator: Character = "\0"
 
     public func loadCredentials() {
         guard let stored = try? keychain.retrieve(account: Self.credentialsAccount) else { return }

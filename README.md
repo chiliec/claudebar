@@ -50,9 +50,11 @@ cp -r .build/release/ClaudeBar.app /Applications/
 
 ```bash
 ./scripts/run.sh          # build + sign + run
-swift test                # run all tests
+swift test                # run all tests (65 tests)
 swift test --filter AppStateTests  # run one test suite
 ```
+
+The project has two SPM targets: `ClaudeBarUI` (library with models, services, views) and `ClaudeBar` (thin executable entry point). This split enables SwiftUI `#Preview` support.
 
 ### Regenerating the app icon
 
