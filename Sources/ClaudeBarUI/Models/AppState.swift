@@ -48,21 +48,27 @@ public final class AppState {
 
     // MARK: - Lifecycle
 
+    // Store both values in a single keychain item to avoid multiple password prompts on launch
+    private static let credentialsAccount = "credentials"
+    private static let credentialsSeparator: Character = "\n"
+
     public func loadCredentials() {
-        sessionKey = try? keychain.retrieve(account: "sessionKey")
-        orgId = try? keychain.retrieve(account: "orgId")
+        guard let stored = try? keychain.retrieve(account: Self.credentialsAccount) else { return }
+        let parts = stored.split(separator: Self.credentialsSeparator, maxSplits: 1)
+        guard parts.count == 2 else { return }
+        sessionKey = String(parts[0])
+        orgId = String(parts[1])
     }
 
     public func saveCredentials(sessionKey: String, orgId: String) throws {
-        try keychain.save(account: "sessionKey", value: sessionKey)
-        try keychain.save(account: "orgId", value: orgId)
+        let combined = "\(sessionKey)\(Self.credentialsSeparator)\(orgId)"
+        try keychain.save(account: Self.credentialsAccount, value: combined)
         self.sessionKey = sessionKey
         self.orgId = orgId
     }
 
     public func clearCredentials() {
-        try? keychain.delete(account: "sessionKey")
-        try? keychain.delete(account: "orgId")
+        try? keychain.delete(account: Self.credentialsAccount)
         sessionKey = nil
         orgId = nil
         usage = nil

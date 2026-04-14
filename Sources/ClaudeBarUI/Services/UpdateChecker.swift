@@ -1,8 +1,8 @@
 import Foundation
 
-struct UpdateChecker {
-    static let repo = "chiliec/claudebar"
-    static let currentVersion = "0.0.3"
+public struct UpdateChecker {
+    public static let repo = "chiliec/claudebar"
+    public static let currentVersion = "0.0.3"
 
     public struct Release: Codable {
         public let tagName: String
