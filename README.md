@@ -25,7 +25,7 @@ Download the latest `.zip` from [Releases](https://github.com/chiliec/claudebar/
 
 ```bash
 xattr -d com.apple.quarantine ClaudeBar.app
-mv ClaudeBar.app /Applications/
+rm -rf /Applications/ClaudeBar.app && mv ClaudeBar.app /Applications/
 ```
 
 The `xattr` command removes the macOS quarantine flag — required for apps distributed outside the App Store.

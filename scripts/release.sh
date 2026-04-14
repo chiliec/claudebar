@@ -48,7 +48,7 @@ Download `ClaudeBar.zip`, unzip, then run:
 
 ```bash
 xattr -d com.apple.quarantine ClaudeBar.app
-mv ClaudeBar.app /Applications/
+rm -rf /Applications/ClaudeBar.app && mv ClaudeBar.app /Applications/
 ```
 NOTES
 )"
