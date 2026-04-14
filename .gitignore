@@ -4,3 +4,5 @@
 *.xcodeproj/
 xcuserdata/
 .DS_Store
+settings.local.json
+.vscode/*
