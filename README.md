@@ -54,6 +54,15 @@ swift test                # run all tests
 swift test --filter AppStateTests  # run one test suite
 ```
 
+### Regenerating the app icon
+
+The icon is generated programmatically with CoreGraphics. To tweak colors or shape, edit `scripts/generate-icon.swift` and run:
+
+```bash
+swift scripts/generate-icon.swift
+iconutil -c icns .build/ClaudeBar.iconset -o Sources/Resources/AppIcon.icns
+```
+
 > **Note:** Do not use `swift run` -- the binary must be code-signed to access Keychain. Use `./scripts/run.sh` instead.
 
 ## How it works

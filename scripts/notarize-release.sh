@@ -52,6 +52,7 @@ mkdir -p "$BUNDLE_DIR/Contents/MacOS"
 mkdir -p "$BUNDLE_DIR/Contents/Resources"
 cp "$BUILD_DIR/$APP_NAME" "$BUNDLE_DIR/Contents/MacOS/"
 cp Sources/Info.plist "$BUNDLE_DIR/Contents/"
+cp Sources/Resources/AppIcon.icns "$BUNDLE_DIR/Contents/Resources/"
 
 echo "==> Signing with Developer ID (hardened runtime)"
 codesign --force --sign "$SIGN_IDENTITY" --options runtime "$BUNDLE_DIR"
