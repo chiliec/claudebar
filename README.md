@@ -42,7 +42,10 @@ cp -r .build/release/ClaudeBar.app /Applications/
 ## Setup
 
 1. Open [claude.ai](https://claude.ai) in your browser
-2. DevTools (Cmd+Opt+I) -> Application -> Cookies
+2. Open DevTools and find the `sessionKey` cookie:
+   - **Safari**: Develop -> Show Web Inspector -> Storage -> Cookies
+   - **Chrome / Arc / Brave**: DevTools (Cmd+Opt+I) -> Application -> Cookies
+   - **Firefox**: DevTools (Cmd+Opt+I) -> Storage -> Cookies
 3. Copy the `sessionKey` value
 4. Launch ClaudeBar and paste it in the setup screen
 
