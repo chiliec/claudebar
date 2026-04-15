@@ -39,6 +39,16 @@ cd claudebar
 cp -r .build/release/ClaudeBar.app /Applications/
 ```
 
+The build scripts auto-detect your Apple Development certificate. If you have none, they fall back to ad-hoc signing (the app will ask for your Keychain password on every launch).
+
+To use a specific certificate:
+
+```bash
+CODE_SIGN_IDENTITY="Apple Development: Your Name (XXXXXXXX)" ./scripts/bundle.sh
+```
+
+On the first launch after building, macOS will ask for your Keychain password to authorize the app — click **Always Allow** so it won't ask again.
+
 ## Setup
 
 1. Open [claude.ai](https://claude.ai) in your browser
