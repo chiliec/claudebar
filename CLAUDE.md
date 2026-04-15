@@ -31,7 +31,7 @@ The `.icns` is copied into `Contents/Resources/` by all bundle scripts. `Info.pl
 
 ## Code Signing
 
-Both scripts sign with `"Apple Development: Vladimir Babin (8FNR8DGE9N)"`. Ad-hoc signing (`-s -`) causes Keychain password prompts on every rebuild because macOS can't match a stable identity. If the signing identity changes, update both `scripts/run.sh` and `scripts/bundle.sh`.
+Both scripts auto-detect the first `Apple Development` certificate via `security find-identity`. To override, set `CODE_SIGN_IDENTITY` env var. Falls back to ad-hoc signing (`-`) if no certificate is found, but ad-hoc causes Keychain password prompts on every rebuild because macOS can't match a stable identity.
 
 ## Architecture
 
