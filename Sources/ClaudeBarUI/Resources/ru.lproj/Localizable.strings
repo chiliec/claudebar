@@ -30,8 +30,6 @@
 "tier.pro" = "Pro";
 "time.daysHours %lld %lld" = "%1$lldд %2$lldч";
 "time.hoursMinutes %lld %lld" = "%1$lldч %2$lldм";
-"time.minutes %lld" = "%lldм";
-"time.now" = "сейчас";
 "update.download" = "Скачать";
 "update.versionAvailable %@" = "v%@ доступна";
 "usage.creditsUsed %@ %@" = "$%1$@ / $%2$@";
