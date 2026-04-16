@@ -30,6 +30,7 @@
 "tier.pro" = "Pro";
 "time.daysHours %lld %lld" = "%1$lldd %2$lldh";
 "time.hoursMinutes %lld %lld" = "%1$lldh %2$lldm";
+"time.lessThanMinute" = "less than a minute";
 "update.download" = "Download";
 "update.versionAvailable %@" = "v%@ available";
 "usage.creditsUsed %@ %@" = "$%1$@ / $%2$@";
