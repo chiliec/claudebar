@@ -136,7 +136,7 @@ struct UsageDetailView: View {
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
                 if let date = resetDate {
-                    Text("usage.resetsOn \(shortResetString(date))", bundle: .module)
+                    (Text(verbatim: "· ") + Text("usage.resetsIn \(resetTimeString(date))", bundle: .module))
                         .font(.subheadline)
                         .foregroundStyle(.tertiary)
                 }
