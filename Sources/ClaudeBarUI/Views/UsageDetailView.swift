@@ -80,6 +80,7 @@ struct UsageDetailView: View {
                     Text("usage.resetsIn \(ResetDuration.string(from: reset))", bundle: .module)
                         .font(.subheadline)
                         .foregroundStyle(.secondary)
+                        .accessibilityLabel(ResetDuration.accessibilityLabel(for: reset))
                 }
             }
 
@@ -139,6 +140,7 @@ struct UsageDetailView: View {
                     (Text(verbatim: "· ") + Text("usage.resetsIn \(ResetDuration.string(from: date))", bundle: .module))
                         .font(.subheadline)
                         .foregroundStyle(.tertiary)
+                        .accessibilityLabel(ResetDuration.accessibilityLabel(for: date))
                 }
             }
             GeometryReader { geo in

@@ -10,4 +10,13 @@ public enum ResetDuration {
         if days > 0 { return String(localized: "time.daysHours \(days) \(hours)", bundle: .module) }
         return String(localized: "time.hoursMinutes \(hours) \(minutes)", bundle: .module)
     }
+
+    public static func accessibilityLabel(for date: Date, now: Date = Date()) -> String {
+        let interval = max(0, date.timeIntervalSince(now))
+        let formatter = DateComponentsFormatter()
+        formatter.allowedUnits = [.day, .hour, .minute]
+        formatter.unitsStyle = .full
+        let spoken = formatter.string(from: interval) ?? string(from: date, now: now)
+        return String(localized: "usage.resetsIn \(spoken)", bundle: .module)
+    }
 }
