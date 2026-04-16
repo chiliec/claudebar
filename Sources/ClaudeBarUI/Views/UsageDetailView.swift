@@ -77,7 +77,7 @@ struct UsageDetailView: View {
                     .foregroundStyle(.secondary)
                 Spacer()
                 if let reset = usage.fiveHour?.resetsAt {
-                    Text("usage.resetsIn \(resetTimeString(reset))", bundle: .module)
+                    Text("usage.resetsIn \(ResetDuration.string(from: reset))", bundle: .module)
                         .font(.subheadline)
                         .foregroundStyle(.secondary)
                 }
@@ -136,7 +136,7 @@ struct UsageDetailView: View {
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
                 if let date = resetDate {
-                    (Text(verbatim: "· ") + Text("usage.resetsIn \(resetTimeString(date))", bundle: .module))
+                    (Text(verbatim: "· ") + Text("usage.resetsIn \(ResetDuration.string(from: date))", bundle: .module))
                         .font(.subheadline)
                         .foregroundStyle(.tertiary)
                 }
@@ -240,16 +240,6 @@ struct UsageDetailView: View {
             return String(localized: "tier.max", bundle: .module)
         }
         return String(localized: "tier.pro", bundle: .module)
-    }
-
-    private func resetTimeString(_ date: Date) -> String {
-        let interval = max(0, date.timeIntervalSinceNow)
-        let totalSeconds = Int(interval)
-        let days = totalSeconds / 86_400
-        let hours = (totalSeconds % 86_400) / 3600
-        let minutes = (totalSeconds % 3600) / 60
-        if days > 0 { return String(localized: "time.daysHours \(days) \(hours)", bundle: .module) }
-        return String(localized: "time.hoursMinutes \(hours) \(minutes)", bundle: .module)
     }
 }
 
