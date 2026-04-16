@@ -28,6 +28,7 @@
 "tier.max" = "Max";
 "tier.maxWithLimit %lld" = "Max $%lld";
 "tier.pro" = "Pro";
+"time.daysHours %lld %lld" = "%1$lldd %2$lldh";
 "time.hoursMinutes %lld %lld" = "%1$lldh %2$lldm";
 "time.minutes %lld" = "%lldm";
 "time.now" = "now";
