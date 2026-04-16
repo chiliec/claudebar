@@ -139,7 +139,7 @@ struct UsageDetailView: View {
                 if let date = resetDate {
                     (Text(verbatim: "· ") + Text("usage.resetsIn \(ResetDuration.string(from: date))", bundle: .module))
                         .font(.subheadline)
-                        .foregroundStyle(.tertiary)
+                        .foregroundStyle(.secondary)
                         .accessibilityLabel(ResetDuration.accessibilityLabel(for: date))
                 }
             }
