@@ -253,19 +253,6 @@ struct UsageDetailView: View {
         if hours > 0 { return String(localized: "time.hoursMinutes \(hours) \(minutes)", bundle: .module) }
         return String(localized: "time.minutes \(minutes)", bundle: .module)
     }
-
-    private static let shortDateFormatter: DateFormatter = {
-        let formatter = DateFormatter()
-        formatter.dateFormat = "EEE"
-        if let langCode = Bundle.module.preferredLocalizations.first {
-            formatter.locale = Locale(identifier: langCode)
-        }
-        return formatter
-    }()
-
-    private func shortResetString(_ date: Date) -> String {
-        Self.shortDateFormatter.string(from: date)
-    }
 }
 
 // MARK: - Liquid Glass Modifiers
