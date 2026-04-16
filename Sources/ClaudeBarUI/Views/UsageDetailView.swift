@@ -245,8 +245,11 @@ struct UsageDetailView: View {
     private func resetTimeString(_ date: Date) -> String {
         let interval = date.timeIntervalSinceNow
         if interval <= 0 { return String(localized: "time.now", bundle: .module) }
-        let hours = Int(interval) / 3600
-        let minutes = (Int(interval) % 3600) / 60
+        let totalSeconds = Int(interval)
+        let days = totalSeconds / 86_400
+        let hours = (totalSeconds % 86_400) / 3600
+        let minutes = (totalSeconds % 3600) / 60
+        if days > 0 { return String(localized: "time.daysHours \(days) \(hours)", bundle: .module) }
         if hours > 0 { return String(localized: "time.hoursMinutes \(hours) \(minutes)", bundle: .module) }
         return String(localized: "time.minutes \(minutes)", bundle: .module)
     }
