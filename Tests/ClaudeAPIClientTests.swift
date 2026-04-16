@@ -23,17 +23,17 @@ struct ClaudeAPIClientTests {
     @Test func parseUsageResponse() throws {
         let json = """
         {
-          "five_hour": { "utilization": 0.73, "resets_at": "2026-04-12T15:30:00.000Z" },
-          "seven_day": { "utilization": 0.31, "resets_at": "2026-04-14T12:59:00.000Z" },
-          "seven_day_sonnet": { "utilization": 0.20, "resets_at": "2026-04-14T12:59:00.000Z" },
-          "seven_day_opus": { "utilization": 0.08, "resets_at": null }
+          "five_hour": { "utilization": 73.0, "resets_at": "2026-04-12T15:30:00.000Z" },
+          "seven_day": { "utilization": 31.0, "resets_at": "2026-04-14T12:59:00.000Z" },
+          "seven_day_sonnet": { "utilization": 20.0, "resets_at": "2026-04-14T12:59:00.000Z" },
+          "seven_day_opus": { "utilization": 8.0, "resets_at": null }
         }
         """.data(using: .utf8)!
 
         let usage = try ClaudeAPIClient.parseUsageResponse(data: json)
-        #expect(usage.fiveHour?.utilization == 0.73)
-        #expect(usage.sevenDay.utilization == 0.31)
-        #expect(usage.sevenDaySonnet?.utilization == 0.20)
+        #expect(abs(usage.fiveHour!.utilization - 0.73) < 0.0001)
+        #expect(abs(usage.sevenDay.utilization - 0.31) < 0.0001)
+        #expect(abs(usage.sevenDaySonnet!.utilization - 0.20) < 0.0001)
     }
 
     @Test func parseOrganizationsResponse() throws {

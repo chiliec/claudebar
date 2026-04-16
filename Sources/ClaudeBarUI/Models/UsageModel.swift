@@ -19,19 +19,19 @@ public struct UsageResponse: Codable {
 }
 
 public struct WindowUsage: Codable {
-    /// Utilization as a fraction (0.0 to 1.0). The API returns 0–100; we normalize on decode.
+    /// Utilization as a fraction (0.0 to 1.0). The API returns 0–100; the decoder divides by 100.
     public let utilization: Double
     public let resetsAt: Date?
 
     public init(utilization: Double, resetsAt: Date?) {
-        self.utilization = utilization > 1.0 ? utilization / 100.0 : utilization
+        self.utilization = utilization
         self.resetsAt = resetsAt
     }
 
     public init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
         let rawUtilization = try container.decode(Double.self, forKey: .utilization)
-        self.utilization = rawUtilization > 1.0 ? rawUtilization / 100.0 : rawUtilization
+        self.utilization = rawUtilization / 100.0
         self.resetsAt = try container.decodeIfPresent(Date.self, forKey: .resetsAt)
     }
 }
