@@ -79,7 +79,7 @@ struct UsageDetailView: View {
                 if let reset = usage.fiveHour?.resetsAt {
                     Text("usage.resetsIn \(ResetDuration.string(from: reset))", bundle: .module)
                         .font(.subheadline)
-                        .foregroundStyle(.secondary)
+                        .foregroundStyle(.tertiary)
                         .accessibilityLabel(ResetDuration.accessibilityLabel(for: reset))
                 }
             }
@@ -133,15 +133,15 @@ struct UsageDetailView: View {
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
                 Spacer()
+                if let date = resetDate {
+                    (Text("usage.resetsIn \(ResetDuration.string(from: date))", bundle: .module) + Text(verbatim: " ·"))
+                        .font(.subheadline)
+                        .foregroundStyle(.tertiary)
+                        .accessibilityLabel(ResetDuration.accessibilityLabel(for: date))
+                }
                 Text(verbatim: "\(Int(utilization * 100))%")
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
-                if let date = resetDate {
-                    (Text(verbatim: "· ") + Text("usage.resetsIn \(ResetDuration.string(from: date))", bundle: .module))
-                        .font(.subheadline)
-                        .foregroundStyle(.secondary)
-                        .accessibilityLabel(ResetDuration.accessibilityLabel(for: date))
-                }
             }
             GeometryReader { geo in
                 ZStack(alignment: .leading) {
