@@ -22,16 +22,16 @@ Every reset-time label across the popover uses the same relative-duration format
 
 Replace `resetTimeString()` with one formatter that covers all window sizes. Remove `shortResetString()` and the `shortDateFormatter` static property entirely.
 
-Tiered output (largest applicable tier wins):
+Tiered output (largest applicable tier wins). Every output is a two-unit composite — no one-unit fallbacks, no special-case strings:
 
-| Interval to reset    | Output    | Localization key                        |
-| -------------------- | --------- | --------------------------------------- |
-| `≤ 0`                | `now`     | `time.now` (existing)                   |
-| `≥ 24h`              | `3d 4h`   | `time.daysHours %lld %lld` (**new**)    |
-| `≥ 1h` and `< 24h`   | `2h 30m`  | `time.hoursMinutes %lld %lld` (existing)|
-| `< 1h`               | `45m`     | `time.minutes %lld` (existing)          |
+| Interval to reset | Output   | Localization key                         |
+| ----------------- | -------- | ---------------------------------------- |
+| `≥ 24h`           | `3d 4h`  | `time.daysHours %lld %lld` (**new**)     |
+| `< 24h`           | `2h 30m` | `time.hoursMinutes %lld %lld` (existing) |
 
-Two-unit outputs (`3d 4h`, `2h 30m`) always render both units even when the smaller is zero (`3d 0h`, `2h 0m`). This matches the existing behavior of `time.hoursMinutes` and keeps the label width stable as the countdown ticks down.
+Both tiers always render both units even when the smaller is zero (`3d 0h`, `2h 0m`, `0h 45m`, `0h 0m`). Keeping a single two-unit style across the whole lifecycle of a countdown — including after it hits zero — is an explicit design choice: labels should never change shape, only values. The `time.now` and `time.minutes` keys become unreachable under this rule and are removed.
+
+Negative intervals (reset already elapsed, clock drift) are clamped to zero so the formatter still emits `0h 0m` rather than a negative value.
 
 ### Unified label
 
@@ -63,7 +63,13 @@ Implementation: the bullet is a pure visual separator, rendered in Swift as `Tex
 ```
 "usage.resetsOn %@" = "· resets %@";
 "usage.resetsOn %@" = "· сброс %@";
+"time.now" = "now";
+"time.now" = "сейчас";
+"time.minutes %lld" = "%lldm";
+"time.minutes %lld" = "%lldм";
 ```
+
+(Four removals per file — the `usage.resetsOn` key plus the two now-unreachable `time.*` keys.)
 
 ### Call-site changes (`UsageDetailView.swift`)
 
@@ -73,20 +79,20 @@ Implementation: the bullet is a pure visual separator, rendered in Swift as `Tex
 
 ## Non-goals
 
-- No changes to tier boundaries, colors, bar heights, or layout spacing.
+- No changes to colors, bar heights, or layout spacing.
 - No changes to the API response model (`WindowUsage.resetsAt`) or parsing.
-- No changes to the 5-hour section's existing behavior when interval < 1 hour (`45m`) or at zero (`now`).
 - No test additions. The formatter is a private view helper; existing tests (`UsageModelTests`, `AppStateTests`) don't cover view-level formatting, and this change doesn't alter that contract.
 
 ## Edge cases
 
-- **Interval exactly 0 or negative** — renders `now` via existing `time.now` key. This matches today's 5-hour behavior; the 7-day rows gain this behavior (currently they would still show the weekday of the past reset date).
-- **Exact multiples** — `3d 0h`, `2h 0m`, `0m` are all valid outputs. `0m` replaces what used to be `now`? No — the tier check is strictly `> 0` for `now`, so a 30-second interval renders `0m` (truncation). Acceptable: it matches the existing `time.minutes` behavior for the 5-hour row.
+- **Interval exactly 0 or negative** — clamped to zero, renders `0h 0m`. Replaces the previous `now` output; the shape of the label stays constant so sibling UI doesn't jump when a countdown expires.
+- **Sub-minute interval** — `Int(interval) / 60` truncates to 0, renders `0h 0m`. Acceptable: the user sees the window has effectively reset.
+- **Exact multiples** — `3d 0h`, `2h 0m`, `0h 45m`, `0h 0m` are all valid outputs. There is no one-unit output anywhere in the system.
 - **Missing `resetsAt`** — the 7-day `slimBar` already guards with `if let date = resetDate`, so nil simply omits the reset suffix. Unchanged.
 - **Locale** — Russian localization shipped with matching keys; other locales are not currently supported by the project.
 
 ## Files touched
 
 - `Sources/ClaudeBarUI/Views/UsageDetailView.swift` — formatter unification, call-site update, dead-code removal.
-- `Sources/ClaudeBarUI/Resources/en.lproj/Localizable.strings` — add `time.daysHours`, remove `usage.resetsOn`.
+- `Sources/ClaudeBarUI/Resources/en.lproj/Localizable.strings` — add `time.daysHours`; remove `usage.resetsOn`, `time.now`, `time.minutes`.
 - `Sources/ClaudeBarUI/Resources/ru.lproj/Localizable.strings` — same.
