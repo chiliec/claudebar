@@ -40,7 +40,6 @@
 "usage.noData" = "Данных пока нет";
 "usage.opus" = "Opus";
 "usage.resetsIn %@" = "Сброс через %@";
-"usage.resetsOn %@" = "· сброс %@";
 "usage.sevenDayWindows" = "7-дневные окна";
 "usage.sonnet" = "Sonnet";
 "usage.title" = "Использование Claude";

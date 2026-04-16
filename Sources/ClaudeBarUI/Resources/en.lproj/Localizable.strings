@@ -40,7 +40,6 @@
 "usage.noData" = "No usage data yet";
 "usage.opus" = "Opus";
 "usage.resetsIn %@" = "Resets in %@";
-"usage.resetsOn %@" = "· resets %@";
 "usage.sevenDayWindows" = "7-Day Windows";
 "usage.sonnet" = "Sonnet";
 "usage.title" = "Claude Usage";
