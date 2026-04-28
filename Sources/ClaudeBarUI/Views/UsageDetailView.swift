@@ -17,7 +17,7 @@ struct UsageDetailView: View {
                     Divider()
                         .padding(.horizontal, 16)
                         .padding(.bottom, 8)
-                    extraUsageSection(used: used, limit: limit)
+                    extraUsageSection(used: used, limit: limit, currency: extra.currency, overage: extra.overageBalance, overageCurrency: extra.overageBalanceCurrency)
                 }
             } else if state.isLoading {
                 ProgressView()
@@ -45,25 +45,32 @@ struct UsageDetailView: View {
             Text("usage.title", bundle: .module)
                 .font(.headline)
             Spacer()
-            if let usage = state.usage {
-                if #available(macOS 26.0, *) {
-                    Text(tierLabel(usage))
-                        .font(.caption)
-                        .padding(.horizontal, 8)
-                        .padding(.vertical, 2)
-                        .glassEffect()
-                } else {
-                    Text(tierLabel(usage))
-                        .font(.caption)
-                        .padding(.horizontal, 8)
-                        .padding(.vertical, 2)
-                        .background(.quaternary)
-                        .clipShape(Capsule())
-                }
+            if state.usage != nil {
+                tierPill(for: state.tier)
             }
         }
         .padding(.horizontal, 16)
         .padding(.vertical, 12)
+    }
+
+    @ViewBuilder
+    private func tierPill(for tier: SubscriptionTier) -> some View {
+        let label = Group {
+            if case .unknown(let raw?) = tier {
+                Text(verbatim: raw.capitalized)
+            } else {
+                Text(LocalizedStringKey(tier.localizationKey), bundle: .module)
+            }
+        }
+        .font(.caption)
+        .padding(.horizontal, 8)
+        .padding(.vertical, 2)
+
+        if #available(macOS 26.0, *) {
+            label.glassEffect()
+        } else {
+            label.background(.quaternary).clipShape(Capsule())
+        }
     }
 
     private func fiveHourSection(_ usage: UsageResponse) -> some View {
@@ -114,13 +121,11 @@ struct UsageDetailView: View {
 
             slimBar(label: String(localized: "usage.total", bundle: .module), utilization: usage.sevenDay.utilization, resetDate: usage.sevenDay.resetsAt, color: .blue)
 
-            if let opus = usage.sevenDayOpus {
-                slimBar(label: String(localized: "usage.opus", bundle: .module), utilization: opus.utilization, resetDate: opus.resetsAt, color: Color(red: 0.75, green: 0.52, blue: 0.99))
-            }
+            let sonnet = usage.sevenDaySonnet ?? WindowUsage(utilization: 0, resetsAt: nil)
+            slimBar(label: String(localized: "usage.sonnet", bundle: .module), utilization: sonnet.utilization, resetDate: sonnet.resetsAt, color: Color(red: 0.38, green: 0.65, blue: 0.98))
 
-            if let sonnet = usage.sevenDaySonnet {
-                slimBar(label: String(localized: "usage.sonnet", bundle: .module), utilization: sonnet.utilization, resetDate: sonnet.resetsAt, color: Color(red: 0.38, green: 0.65, blue: 0.98))
-            }
+            let design = usage.sevenDayOmelette ?? WindowUsage(utilization: 0, resetsAt: nil)
+            slimBar(label: String(localized: "usage.design", bundle: .module), utilization: design.utilization, resetDate: design.resetsAt, color: Color(red: 0.95, green: 0.60, blue: 0.40))
         }
         .padding(.horizontal, 16)
         .padding(.bottom, 12)
@@ -181,21 +186,47 @@ struct UsageDetailView: View {
         }
     }
 
-    private func extraUsageSection(used: Double, limit: Double) -> some View {
-        VStack(alignment: .leading, spacing: 6) {
+    private func extraUsageSection(used: Double, limit: Double, currency: String?, overage: Double?, overageCurrency: String?) -> some View {
+        let currencySymbol = Self.currencySymbol(for: currency)
+        let usedDisplay = "\(currencySymbol)\(String(format: "%.2f", used / 100))"
+        let limitDisplay = "\(currencySymbol)\(String(format: "%.0f", limit / 100))"
+        return VStack(alignment: .leading, spacing: 6) {
             Text("usage.extraCredits", bundle: .module)
                 .font(.subheadline)
                 .foregroundStyle(.secondary)
 
             slimBar(
-                label: String(localized: "usage.creditsUsed \(String(format: "%.2f", used / 100)) \(String(format: "%.0f", limit / 100))", bundle: .module),
+                label: String(localized: "usage.creditsUsed \(usedDisplay) \(limitDisplay)", bundle: .module),
                 utilization: min(used / limit, 1.0),
                 resetDate: nil,
                 color: .teal
             )
+
+            if let overage, let overageCurrency {
+                let overageSymbol = Self.currencySymbol(for: overageCurrency)
+                HStack {
+                    Text("usage.overageBalance", bundle: .module)
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                    Spacer()
+                    Text(verbatim: "\(overageSymbol)\(String(format: "%.2f", overage / 100))")
+                        .font(.subheadline.weight(.semibold))
+                        .foregroundStyle(.green)
+                }
+            }
         }
         .padding(.horizontal, 16)
         .padding(.bottom, 12)
+    }
+
+    private static func currencySymbol(for code: String?) -> String {
+        switch code?.uppercased() {
+        case nil, "USD": return "$"
+        case "EUR": return "€"
+        case "GBP": return "£"
+        case "JPY": return "¥"
+        case let other?: return "\(other) "
+        }
     }
 
     private var footer: some View {
@@ -234,15 +265,6 @@ struct UsageDetailView: View {
         .padding(.vertical, 10)
     }
 
-    private func tierLabel(_ usage: UsageResponse) -> String {
-        if usage.sevenDayOpus != nil {
-            if let extra = usage.extraUsage, let limit = extra.monthlyLimit {
-                return String(localized: "tier.maxWithLimit \(Int(limit / 100))", bundle: .module)
-            }
-            return String(localized: "tier.max", bundle: .module)
-        }
-        return String(localized: "tier.pro", bundle: .module)
-    }
 }
 
 // MARK: - Liquid Glass Modifiers

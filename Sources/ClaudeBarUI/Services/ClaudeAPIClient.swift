@@ -33,6 +33,16 @@ public struct ClaudeAPIClient {
         return request
     }
 
+    public func buildOrganizationDetailsRequest() throws -> URLRequest {
+        guard let url = URL(string: "\(Self.baseURL)/api/organizations/\(orgId)") else {
+            throw APIError.invalidURL
+        }
+        var request = URLRequest(url: url)
+        request.httpMethod = "GET"
+        request.setValue("sessionKey=\(sessionKey)", forHTTPHeaderField: "Cookie")
+        return request
+    }
+
     // MARK: - Response Parsers
 
     public static func parseUsageResponse(data: Data) throws -> UsageResponse {
@@ -54,12 +64,33 @@ public struct ClaudeAPIClient {
         return try JSONDecoder().decode([Organization].self, from: data)
     }
 
+    public static func parseOrganizationDetailsResponse(data: Data) throws -> OrganizationDetails {
+        let decoder = JSONDecoder()
+        decoder.keyDecodingStrategy = .convertFromSnakeCase
+        decoder.dateDecodingStrategy = .custom { decoder in
+            let container = try decoder.singleValueContainer()
+            let dateString = try container.decode(String.self)
+            let formatters = [ISO8601DateFormatter.withFractionalSeconds, ISO8601DateFormatter.standard]
+            for formatter in formatters {
+                if let date = formatter.date(from: dateString) { return date }
+            }
+            throw DecodingError.dataCorruptedError(in: container, debugDescription: "Cannot parse date: \(dateString)")
+        }
+        return try decoder.decode(OrganizationDetails.self, from: data)
+    }
+
     // MARK: - Network Calls
 
     public func fetchUsage() async throws -> UsageResponse {
         let (data, response) = try await URLSession.shared.data(for: try buildUsageRequest())
         try Self.validateHTTPResponse(response)
         return try Self.parseUsageResponse(data: data)
+    }
+
+    public func fetchOrganizationDetails() async throws -> OrganizationDetails {
+        let (data, response) = try await URLSession.shared.data(for: try buildOrganizationDetailsRequest())
+        try Self.validateHTTPResponse(response)
+        return try Self.parseOrganizationDetailsResponse(data: data)
     }
 
     public static func fetchOrganizations(sessionKey: String) async throws -> [Organization] {

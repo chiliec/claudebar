@@ -11,9 +11,17 @@ public final class AppState {
 
     // MARK: - Usage State
     public var usage: UsageResponse?
+    public var organizationDetails: OrganizationDetails?
     public var lastUpdated: Date?
     public var isLoading = false
     public var error: AppError?
+
+    /// Authoritative tier from `/organizations/{id}` when available; falls
+    /// back to a heuristic on the usage payload during the first-load window.
+    public var tier: SubscriptionTier {
+        if let details = organizationDetails { return details.tier }
+        return (usage?.isMaxTier ?? false) ? .max5x : .pro
+    }
 
     // MARK: - UI State
     public var showingSettings = false
@@ -79,6 +87,7 @@ public final class AppState {
         sessionKey = nil
         orgId = nil
         usage = nil
+        organizationDetails = nil
         organizations = []
     }
 
@@ -122,6 +131,10 @@ public final class AppState {
         do {
             usage = try await client.fetchUsage()
             lastUpdated = Date()
+            // Fetch org details once per session — tier is stable across polls.
+            if organizationDetails == nil {
+                organizationDetails = try? await client.fetchOrganizationDetails()
+            }
         } catch APIError.sessionExpired {
             error = .sessionExpired
             clearCredentials()
