@@ -178,7 +178,7 @@ public final class AppState {
 
     /// Pure state-machine step extracted from updateSessionKey for testability.
     /// Decides between "preserve current org" and "enter pending pick".
-    public func applyKeyUpdateResult(newSessionKey: String, fetchedOrgs: [Organization]) {
+    func applyKeyUpdateResult(newSessionKey: String, fetchedOrgs: [Organization]) {
         if let currentOrgId = orgId, fetchedOrgs.contains(where: { $0.uuid == currentOrgId }) {
             // Common case: cookie rotated, account/org unchanged
             do {

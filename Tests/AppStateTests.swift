@@ -381,6 +381,21 @@ struct AppStateTests {
         state.signOut()
     }
 
+    @Test func confirmPendingOrgDoesNothingWithoutPendingKey() async throws {
+        let state = makeState()
+        try state.saveCredentials(sessionKey: "sk-old", orgId: "org-1")
+        // No pending state set
+        let org = Organization(uuid: "org-7", name: "New", capabilities: nil)
+        await state.confirmPendingOrg(org)
+
+        // Old creds untouched, no spurious mutations
+        #expect(state.sessionKey == "sk-old")
+        #expect(state.orgId == "org-1")
+        #expect(!state.pendingOrgPick)
+
+        state.signOut()
+    }
+
     @Test func cancelPendingOrgPickRevertsTransientState() throws {
         let state = makeState()
         try state.saveCredentials(sessionKey: "sk-old", orgId: "org-1")
