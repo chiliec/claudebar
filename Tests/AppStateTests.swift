@@ -225,6 +225,7 @@ struct AppStateTests {
         )
         #expect(state.organizations.count == 1)
         #expect(state.organizations[0].name == "Cached")
+        state.clearCredentials()
     }
 
     @Test func persistsOrgListWhenSet() {
@@ -236,6 +237,7 @@ struct AppStateTests {
         state.organizations = [Organization(uuid: "org-1", name: "Saved", capabilities: nil)]
         #expect(store.load().count == 1)
         #expect(store.load()[0].name == "Saved")
+        state.clearCredentials()
     }
 
     // MARK: - Initial UI State
