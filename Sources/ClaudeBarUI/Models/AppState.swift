@@ -101,7 +101,7 @@ public final class AppState {
 
     /// Non-destructive recovery: wipes sessionKey + usage but preserves
     /// orgId and cached organizations so the reconnect screen can name the org.
-    public func handleSessionExpired() {
+    func handleSessionExpired() {
         try? keychain.delete(account: Self.credentialsAccount)
         sessionKey = nil
         usage = nil

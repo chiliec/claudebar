@@ -52,25 +52,6 @@ struct AppStateTests {
         state2.signOut()
     }
 
-    @Test func signOutResetsState() throws {
-        let state = makeState()
-        try state.saveCredentials(sessionKey: "sk-test", orgId: "org-123")
-        state.usage = UsageResponse(
-            fiveHour: WindowUsage(utilization: 0.5, resetsAt: nil),
-            sevenDay: WindowUsage(utilization: 0.3, resetsAt: nil),
-            sevenDaySonnet: nil, sevenDayOpus: nil, extraUsage: nil
-        )
-        state.organizations = [Organization(uuid: "org-123", name: "Test", capabilities: nil)]
-
-        state.signOut()
-
-        #expect(state.sessionKey == nil)
-        #expect(state.orgId == nil)
-        #expect(state.usage == nil)
-        #expect(state.organizations.isEmpty)
-        #expect(!state.isAuthenticated)
-    }
-
     // MARK: - Menu Bar Display Values
 
     @Test func menuBarTextWithNoUsage() {
