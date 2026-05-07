@@ -73,7 +73,7 @@ public struct ExtraUsage: Codable {
     }
 }
 
-public struct Organization: Codable {
+public struct Organization: Codable, Equatable {
     public let uuid: String
     public let name: String
     public let capabilities: [String]?
