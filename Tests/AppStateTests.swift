@@ -10,7 +10,7 @@ struct AppStateTests {
             orgListStore: orgStore
         )
         // Clean slate
-        state.clearCredentials()
+        state.signOut()
         return state
     }
 
@@ -49,10 +49,10 @@ struct AppStateTests {
         #expect(state2.isAuthenticated)
 
         // Cleanup
-        state2.clearCredentials()
+        state2.signOut()
     }
 
-    @Test func clearCredentialsResetsState() throws {
+    @Test func signOutResetsState() throws {
         let state = makeState()
         try state.saveCredentials(sessionKey: "sk-test", orgId: "org-123")
         state.usage = UsageResponse(
@@ -62,7 +62,7 @@ struct AppStateTests {
         )
         state.organizations = [Organization(uuid: "org-123", name: "Test", capabilities: nil)]
 
-        state.clearCredentials()
+        state.signOut()
 
         #expect(state.sessionKey == nil)
         #expect(state.orgId == nil)
@@ -210,7 +210,7 @@ struct AppStateTests {
         #expect(state.orgId == "org-2")
         #expect(state.isAuthenticated)
 
-        state.clearCredentials()
+        state.signOut()
     }
 
     // MARK: - Org List Persistence
@@ -225,7 +225,7 @@ struct AppStateTests {
         )
         #expect(state.organizations.count == 1)
         #expect(state.organizations[0].name == "Cached")
-        state.clearCredentials()
+        state.signOut()
     }
 
     @Test func persistsOrgListWhenSet() {
@@ -237,7 +237,49 @@ struct AppStateTests {
         state.organizations = [Organization(uuid: "org-1", name: "Saved", capabilities: nil)]
         #expect(store.load().count == 1)
         #expect(store.load()[0].name == "Saved")
-        state.clearCredentials()
+        state.signOut()
+    }
+
+    // MARK: - Sign Out & Session-Expired
+
+    @Test func signOutWipesEverything() throws {
+        let state = makeState()
+        try state.saveCredentials(sessionKey: "sk", orgId: "org-1")
+        state.organizations = [Organization(uuid: "org-1", name: "X", capabilities: nil)]
+        state.usage = UsageResponse(
+            fiveHour: WindowUsage(utilization: 0.5, resetsAt: nil),
+            sevenDay: WindowUsage(utilization: 0.3, resetsAt: nil),
+            sevenDaySonnet: nil, sevenDayOpus: nil, extraUsage: nil
+        )
+
+        state.signOut()
+
+        #expect(state.sessionKey == nil)
+        #expect(state.orgId == nil)
+        #expect(state.usage == nil)
+        #expect(state.organizations.isEmpty)
+        #expect(!state.isAuthenticated)
+    }
+
+    @Test func handleSessionExpiredPreservesOrgIdAndOrgs() throws {
+        let state = makeState()
+        try state.saveCredentials(sessionKey: "sk-old", orgId: "org-1")
+        state.organizations = [Organization(uuid: "org-1", name: "Acme", capabilities: nil)]
+        state.usage = UsageResponse(
+            fiveHour: WindowUsage(utilization: 0.5, resetsAt: nil),
+            sevenDay: WindowUsage(utilization: 0.3, resetsAt: nil),
+            sevenDaySonnet: nil, sevenDayOpus: nil, extraUsage: nil
+        )
+
+        state.handleSessionExpired()
+
+        #expect(state.sessionKey == nil)
+        #expect(state.orgId == "org-1")
+        #expect(state.organizations.count == 1)
+        #expect(state.organizations[0].name == "Acme")
+        #expect(state.usage == nil)
+        #expect(state.error == .sessionExpired)
+        #expect(!state.isAuthenticated)
     }
 
     // MARK: - Initial UI State

@@ -90,13 +90,24 @@ public final class AppState {
         self.orgId = orgId
     }
 
-    public func clearCredentials() {
+    public func signOut() {
         try? keychain.delete(account: Self.credentialsAccount)
         sessionKey = nil
         orgId = nil
         usage = nil
         organizationDetails = nil
         organizations = []
+    }
+
+    /// Non-destructive recovery: wipes sessionKey + usage but preserves
+    /// orgId and cached organizations so the reconnect screen can name the org.
+    public func handleSessionExpired() {
+        try? keychain.delete(account: Self.credentialsAccount)
+        sessionKey = nil
+        usage = nil
+        organizationDetails = nil
+        error = .sessionExpired
+        // orgId and organizations: preserved
     }
 
     // MARK: - API Calls
@@ -144,8 +155,7 @@ public final class AppState {
                 organizationDetails = try? await client.fetchOrganizationDetails()
             }
         } catch APIError.sessionExpired {
-            error = .sessionExpired
-            clearCredentials()
+            handleSessionExpired()
         } catch APIError.rateLimited {
             error = .rateLimited
         } catch {

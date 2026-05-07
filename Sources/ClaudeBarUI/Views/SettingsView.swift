@@ -34,7 +34,7 @@ public struct SettingsView: View {
                             .font(.subheadline)
                     }
                     Button {
-                        state.clearCredentials()
+                        state.signOut()
                     } label: {
                         Text("settings.updateSessionKey", bundle: .module)
                     }
