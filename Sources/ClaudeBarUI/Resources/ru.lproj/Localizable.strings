@@ -28,7 +28,6 @@
 "settings.session" = "Сессия";
 "settings.sessionKey" = "Ключ сессии:";
 "settings.title" = "Настройки";
-"settings.updateSessionKey" = "Обновить ключ сессии";
 "setup.chooseOrganization" = "Выберите...";
 "setup.instructions" = "1. Откройте **claude.ai** в браузере\n2. DevTools (⌘⌥I) → Application → Cookies\n3. Скопируйте значение `sessionKey`";
 "setup.selectOrganization" = "Выберите организацию:";

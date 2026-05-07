@@ -12,7 +12,8 @@ public struct SessionExpiredView: View {
             subtitle: String(localized: "session.expiredSubtitle", bundle: .module),
             buttonLabel: String(localized: "action.reconnect", bundle: .module),
             titleIcon: "exclamationmark.triangle",
-            titleColor: .orange
+            titleColor: .orange,
+            submitAction: { [state] key in await state.updateSessionKey(key) }
         )
     }
 

@@ -184,6 +184,9 @@ public final class AppState {
             do {
                 try saveCredentials(sessionKey: newSessionKey, orgId: currentOrgId)
                 organizations = fetchedOrgs
+                pendingOrgPick = false
+                pendingSessionKey = nil
+                pendingOrganizations = []
                 startPolling()
             } catch {
                 self.error = .network(error.localizedDescription)
@@ -236,10 +239,16 @@ public final class AppState {
             if organizationDetails == nil {
                 organizationDetails = try? await client.fetchOrganizationDetails()
             }
-            // Best-effort background refresh of the org list.
+            // Best-effort background refresh of the org list. Capture the
+            // sessionKey at spawn; on completion, only apply if the user is
+            // still signed in with that same key — avoids leaking the prior
+            // account's orgs after sign-out or account switch.
             Task { [weak self, sessionKey] in
                 if let fetched = try? await ClaudeAPIClient.fetchOrganizations(sessionKey: sessionKey) {
-                    await MainActor.run { self?.applyRefreshedOrgList(fetched) }
+                    await MainActor.run {
+                        guard let self, self.sessionKey == sessionKey else { return }
+                        self.applyRefreshedOrgList(fetched)
+                    }
                 }
             }
         } catch APIError.sessionExpired {

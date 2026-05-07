@@ -8,6 +8,10 @@ struct SessionKeyInputView: View {
     let titleIcon: String?
     let titleColor: Color?
     let showQuitButton: Bool
+    /// Optional submit handler. When set, replaces the default `validateAndFetchOrgs`
+    /// behavior — used by SessionExpiredView to route through `updateSessionKey`,
+    /// which preserves the cached `orgId` when the new key is for the same account.
+    let submitAction: ((String) async -> Void)?
 
     @State private var keyInput = ""
     @State private var selectedOrgId: String?
@@ -19,7 +23,8 @@ struct SessionKeyInputView: View {
         buttonLabel: String,
         titleIcon: String? = nil,
         titleColor: Color? = nil,
-        showQuitButton: Bool = false
+        showQuitButton: Bool = false,
+        submitAction: ((String) async -> Void)? = nil
     ) {
         self.state = state
         self.title = title
@@ -28,6 +33,18 @@ struct SessionKeyInputView: View {
         self.titleIcon = titleIcon
         self.titleColor = titleColor
         self.showQuitButton = showQuitButton
+        self.submitAction = submitAction
+    }
+
+    private func submit() {
+        guard !keyInput.isEmpty, !state.isLoading else { return }
+        Task {
+            if let submitAction {
+                await submitAction(keyInput)
+            } else {
+                await state.validateAndFetchOrgs(sessionKey: keyInput)
+            }
+        }
     }
 
     var body: some View {
@@ -48,10 +65,7 @@ struct SessionKeyInputView: View {
             TextField("", text: $keyInput, prompt: Text("setup.sessionKeyPlaceholder", bundle: .module))
                 .textFieldStyle(.roundedBorder)
                 .font(.system(size: 13, design: .monospaced))
-                .onSubmit {
-                    guard !keyInput.isEmpty, !state.isLoading else { return }
-                    Task { await state.validateAndFetchOrgs(sessionKey: keyInput) }
-                }
+                .onSubmit { submit() }
 
             if state.organizations.count > 1 {
                 Text("setup.selectOrganization", bundle: .module)
@@ -86,7 +100,7 @@ struct SessionKeyInputView: View {
             HStack {
                 Spacer()
                 Button {
-                    Task { await state.validateAndFetchOrgs(sessionKey: keyInput) }
+                    submit()
                 } label: {
                     Text(buttonLabel)
                 }

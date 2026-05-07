@@ -332,6 +332,28 @@ struct AppStateTests {
         state.signOut()
     }
 
+    @Test func applyKeyUpdateResultClearsPriorPendingStateOnPreserve() throws {
+        let state = makeState()
+        try state.saveCredentials(sessionKey: "sk-old", orgId: "org-1")
+        state.organizations = [Organization(uuid: "org-1", name: "Old", capabilities: nil)]
+        state.stopPolling()
+
+        // Pre-populate pending state from a prior aborted update
+        state.pendingSessionKey = "sk-stale"
+        state.pendingOrganizations = [Organization(uuid: "stale", name: "Stale", capabilities: nil)]
+        state.pendingOrgPick = true
+
+        let newOrgs = [Organization(uuid: "org-1", name: "Renamed", capabilities: nil)]
+        state.applyKeyUpdateResult(newSessionKey: "sk-new", fetchedOrgs: newOrgs)
+
+        #expect(state.sessionKey == "sk-new")
+        #expect(!state.pendingOrgPick)
+        #expect(state.pendingSessionKey == nil)
+        #expect(state.pendingOrganizations.isEmpty)
+
+        state.signOut()
+    }
+
     @Test func applyKeyUpdateResultEntersPendingPickWhenOrgMissing() throws {
         let state = makeState()
         try state.saveCredentials(sessionKey: "sk-old", orgId: "org-1")

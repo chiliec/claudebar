@@ -49,6 +49,32 @@ struct PopoverViewTests {
 
         _ = try inspected.vStack()
     }
+
+    @Test func showsSessionExpiredViewAfterHandleSessionExpired() throws {
+        // After handleSessionExpired, sessionKey is nil but orgId is preserved.
+        // PopoverView must route to SessionExpiredView, not SetupView.
+        let state = makeState()
+        state.orgId = "org-123"
+        state.error = .sessionExpired
+        let view = PopoverView(state: state)
+        let inspected = try view.inspect()
+
+        _ = try inspected.find(SessionExpiredView.self)
+        #expect(throws: (any Error).self) { try inspected.find(SetupView.self) }
+    }
+
+    @Test func routesToSettingsWhenPendingOrgPick() throws {
+        let state = makeState()
+        state.pendingOrgPick = true
+        state.pendingSessionKey = "sk-new"
+        state.pendingOrganizations = [
+            Organization(uuid: "org-1", name: "Acme", capabilities: nil)
+        ]
+        let view = PopoverView(state: state)
+        let inspected = try view.inspect()
+
+        _ = try inspected.find(SettingsView.self)
+    }
 }
 
 // MARK: - SetupView Tests

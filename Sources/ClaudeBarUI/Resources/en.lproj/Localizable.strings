@@ -28,7 +28,6 @@
 "settings.session" = "Session";
 "settings.sessionKey" = "Session key:";
 "settings.title" = "Settings";
-"settings.updateSessionKey" = "Update Session Key";
 "setup.chooseOrganization" = "Choose...";
 "setup.instructions" = "1. Open **claude.ai** in your browser\n2. DevTools (⌘⌥I) → Application → Cookies\n3. Copy the `sessionKey` value";
 "setup.selectOrganization" = "Select organization:";

@@ -111,9 +111,12 @@ public struct SettingsView: View {
                     inlineKeyError = nil
                     Task {
                         await state.updateSessionKey(keyDraft)
-                        if case .api(let apiErr) = state.error, apiErr == .sessionExpired {
+                        switch state.error {
+                        case .api(.sessionExpired):
                             inlineKeyError = String(localized: "update.badKey", bundle: .module)
-                        } else {
+                        case .some(let err):
+                            inlineKeyError = err.message
+                        case .none:
                             keyDraft = ""
                         }
                     }

@@ -9,12 +9,17 @@ public struct PopoverView: View {
 
     public var body: some View {
         VStack(spacing: 0) {
-            if state.showingSettings {
+            if state.showingSettings || state.pendingOrgPick {
+                // Pending-pick state lives in SettingsView; auto-route there
+                // so the user can resolve it from any source view.
                 SettingsView(state: state)
+            } else if state.error == .sessionExpired, state.orgId != nil {
+                // Session-expired routing must precede !isAuthenticated:
+                // handleSessionExpired nils sessionKey, so isAuthenticated is false,
+                // but the cached orgId lets us show the personalized reconnect view.
+                SessionExpiredView(state: state)
             } else if !state.isAuthenticated {
                 SetupView(state: state)
-            } else if let error = state.error, error == .sessionExpired {
-                SessionExpiredView(state: state)
             } else {
                 UsageDetailView(state: state)
             }
