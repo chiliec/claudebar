@@ -4,8 +4,11 @@ import Testing
 @MainActor
 @Suite(.serialized)
 struct AppStateTests {
-    private func makeState() -> AppState {
-        let state = AppState(keychain: KeychainService(serviceName: "com.claudebar.test"))
+    private func makeState(orgStore: OrgListStore = InMemoryOrgListStore()) -> AppState {
+        let state = AppState(
+            keychain: KeychainService(serviceName: "com.claudebar.test"),
+            orgListStore: orgStore
+        )
         // Clean slate
         state.clearCredentials()
         return state
@@ -208,6 +211,31 @@ struct AppStateTests {
         #expect(state.isAuthenticated)
 
         state.clearCredentials()
+    }
+
+    // MARK: - Org List Persistence
+
+    @Test func loadsOrgListFromStoreOnInit() {
+        let store = InMemoryOrgListStore(initial: [
+            Organization(uuid: "org-1", name: "Cached", capabilities: nil),
+        ])
+        let state = AppState(
+            keychain: KeychainService(serviceName: "com.claudebar.test"),
+            orgListStore: store
+        )
+        #expect(state.organizations.count == 1)
+        #expect(state.organizations[0].name == "Cached")
+    }
+
+    @Test func persistsOrgListWhenSet() {
+        let store = InMemoryOrgListStore()
+        let state = AppState(
+            keychain: KeychainService(serviceName: "com.claudebar.test"),
+            orgListStore: store
+        )
+        state.organizations = [Organization(uuid: "org-1", name: "Saved", capabilities: nil)]
+        #expect(store.load().count == 1)
+        #expect(store.load()[0].name == "Saved")
     }
 
     // MARK: - Initial UI State

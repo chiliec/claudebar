@@ -6,7 +6,9 @@ public final class AppState {
     // MARK: - Auth State
     public var sessionKey: String?
     public var orgId: String?
-    public var organizations: [Organization] = []
+    public var organizations: [Organization] = [] {
+        didSet { orgListStore.save(organizations) }
+    }
     public var isAuthenticated: Bool { sessionKey != nil && orgId != nil }
 
     // MARK: - Usage State
@@ -31,11 +33,17 @@ public final class AppState {
 
     // MARK: - Services
     private let keychain: KeychainService
+    private let orgListStore: OrgListStore
     private var pollTimer: Timer?
     public var pollInterval: TimeInterval = 300 // 5 minutes
 
-    public init(keychain: KeychainService = KeychainService()) {
+    public init(
+        keychain: KeychainService = KeychainService(),
+        orgListStore: OrgListStore = UserDefaultsOrgListStore()
+    ) {
         self.keychain = keychain
+        self.orgListStore = orgListStore
+        self.organizations = orgListStore.load()  // triggers didSet, harmless idempotent save
         loadCredentials()
         if isAuthenticated {
             // Defer polling start to next run loop to avoid publishing changes during init
