@@ -54,7 +54,7 @@ public struct SettingsView: View {
 
                 if state.isAuthenticated && !state.pendingOrgPick {
                     sessionKeyEditor
-                    if state.organizations.count > 1 {
+                    if state.visibleOrganizations.count > 1 {
                         orgPicker
                     }
                     Button {
@@ -142,7 +142,7 @@ public struct SettingsView: View {
                 .font(.subheadline)
                 .foregroundStyle(.secondary)
             Picker("", selection: orgSelectionBinding) {
-                ForEach(state.organizations, id: \.uuid) { org in
+                ForEach(state.visibleOrganizations, id: \.uuid) { org in
                     Text(org.name).tag(org.uuid as String?)
                 }
             }

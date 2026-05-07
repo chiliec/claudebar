@@ -83,6 +83,18 @@ public struct Organization: Codable, Equatable {
         self.name = name
         self.capabilities = capabilities
     }
+
+    /// True when the org has at least one paid-plan capability marker.
+    /// Used to hide free/individual orgs from the switcher UI — they
+    /// have no usage worth tracking in the menu bar.
+    public var isPaidPlan: Bool {
+        guard let caps = capabilities else { return false }
+        let paidMarkers: Set<String> = [
+            "claude_pro", "claude_max", "claude_max_5x", "claude_max_20x",
+            "claude_team", "claude_enterprise", "raven",
+        ]
+        return caps.contains(where: paidMarkers.contains)
+    }
 }
 
 public struct OrganizationDetails: Codable {

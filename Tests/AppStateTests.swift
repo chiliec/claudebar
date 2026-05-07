@@ -14,6 +14,41 @@ struct AppStateTests {
         return state
     }
 
+    // MARK: - Visible Organizations
+
+    @Test func visibleOrganizationsHidesIndividualOrgs() {
+        let state = makeState()
+        state.organizations = [
+            Organization(uuid: "paid-1", name: "Acme", capabilities: ["claude_max"]),
+            Organization(uuid: "free-1", name: "Personal", capabilities: ["chat"]),
+            Organization(uuid: "paid-2", name: "Beta", capabilities: ["claude_pro"]),
+        ]
+        let visible = state.visibleOrganizations
+        #expect(visible.map(\.uuid) == ["paid-1", "paid-2"])
+    }
+
+    @Test func visibleOrganizationsKeepsCurrentEvenIfUnpaid() {
+        let state = makeState()
+        state.orgId = "free-1"
+        state.organizations = [
+            Organization(uuid: "free-1", name: "Personal", capabilities: ["chat"]),
+            Organization(uuid: "paid-1", name: "Acme", capabilities: ["claude_pro"]),
+        ]
+        let visible = state.visibleOrganizations
+        #expect(visible.contains(where: { $0.uuid == "free-1" }))
+        #expect(visible.contains(where: { $0.uuid == "paid-1" }))
+    }
+
+    @Test func visibleOrganizationsHidesOrgWithNilCapabilities() {
+        let state = makeState()
+        state.organizations = [
+            Organization(uuid: "x", name: "Unknown", capabilities: nil),
+            Organization(uuid: "y", name: "Pro", capabilities: ["claude_pro"]),
+        ]
+        let visible = state.visibleOrganizations
+        #expect(visible.map(\.uuid) == ["y"])
+    }
+
     // MARK: - Authentication State
 
     @Test func initialStateIsNotAuthenticated() {

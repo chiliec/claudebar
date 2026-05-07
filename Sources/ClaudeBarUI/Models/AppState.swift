@@ -11,6 +11,14 @@ public final class AppState {
     }
     public var isAuthenticated: Bool { sessionKey != nil && orgId != nil }
 
+    /// Subset of `organizations` shown in switcher UIs. Hides free/individual
+    /// orgs (no paid capability marker) since their usage is not tracked here.
+    /// The currently-active org is always kept visible so the user can navigate
+    /// out of it even if it happens to be unpaid.
+    public var visibleOrganizations: [Organization] {
+        organizations.filter { $0.isPaidPlan || $0.uuid == orgId }
+    }
+
     // MARK: - Pending Key-Update State
     /// Set while the user is updating their session key and the new key
     /// belongs to a different account (current orgId is not in the new org list).

@@ -139,8 +139,8 @@ struct SetupViewTests {
     @Test func showsOrgSelectionWhenMultipleOrgs() throws {
         let state = makeState()
         state.organizations = [
-            Organization(uuid: "org-1", name: "Personal", capabilities: nil),
-            Organization(uuid: "org-2", name: "Work", capabilities: nil),
+            Organization(uuid: "org-1", name: "Personal", capabilities: ["claude_pro"]),
+            Organization(uuid: "org-2", name: "Work", capabilities: ["claude_max"]),
         ]
         let view = SetupView(state: state)
         let inspected = try view.inspect()
@@ -233,8 +233,8 @@ struct UsageDetailViewHeaderTests {
 
     @Test func showsMenuWhenMultipleOrgs() throws {
         let state = makeAuthedState(orgs: [
-            Organization(uuid: "org-1", name: "Personal", capabilities: nil),
-            Organization(uuid: "org-2", name: "Work", capabilities: nil),
+            Organization(uuid: "org-1", name: "Personal", capabilities: ["claude_pro"]),
+            Organization(uuid: "org-2", name: "Work", capabilities: ["claude_max"]),
         ])
         let view = UsageDetailView(state: state)
         let inspected = try view.inspect()
@@ -370,8 +370,8 @@ struct SettingsViewTests {
         state.sessionKey = "sk-test"
         state.orgId = "org-1"
         state.organizations = [
-            Organization(uuid: "org-1", name: "Personal", capabilities: nil),
-            Organization(uuid: "org-2", name: "Work", capabilities: nil),
+            Organization(uuid: "org-1", name: "Personal", capabilities: ["claude_pro"]),
+            Organization(uuid: "org-2", name: "Work", capabilities: ["claude_max"]),
         ]
         let view = SettingsView(state: state)
         let inspected = try view.inspect()

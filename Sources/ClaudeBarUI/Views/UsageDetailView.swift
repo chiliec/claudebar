@@ -57,9 +57,9 @@ struct UsageDetailView: View {
         let currentOrgName = state.orgId.flatMap { id in
             state.organizations.first(where: { $0.uuid == id })?.name
         }
-        if state.organizations.count > 1, let name = currentOrgName {
+        if state.visibleOrganizations.count > 1, let name = currentOrgName {
             Menu {
-                ForEach(state.organizations.filter { $0.uuid != state.orgId }, id: \.uuid) { org in
+                ForEach(state.visibleOrganizations.filter { $0.uuid != state.orgId }, id: \.uuid) { org in
                     Button(org.name) {
                         Task { await state.switchOrganization(to: org) }
                     }
