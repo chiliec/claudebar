@@ -166,6 +166,7 @@ public struct SettingsView: View {
             Button {
                 state.cancelPendingOrgPick()
                 keyDraft = ""
+                inlineKeyError = nil
             } label: {
                 Text("action.cancel", bundle: .module)
             }
