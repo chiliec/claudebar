@@ -42,8 +42,7 @@ struct UsageDetailView: View {
 
     private var header: some View {
         HStack {
-            Text("usage.title", bundle: .module)
-                .font(.headline)
+            headerTitle
             Spacer()
             if state.usage != nil {
                 tierPill(for: state.tier)
@@ -51,6 +50,47 @@ struct UsageDetailView: View {
         }
         .padding(.horizontal, 16)
         .padding(.vertical, 12)
+    }
+
+    @ViewBuilder
+    private var headerTitle: some View {
+        let currentOrgName = state.orgId.flatMap { id in
+            state.organizations.first(where: { $0.uuid == id })?.name
+        }
+        if state.organizations.count > 1, let name = currentOrgName {
+            Menu {
+                ForEach(state.organizations.filter { $0.uuid != state.orgId }, id: \.uuid) { org in
+                    Button(org.name) {
+                        Task { await state.switchOrganization(to: org) }
+                    }
+                }
+                Divider()
+                Button {
+                    state.showingSettings = true
+                } label: {
+                    Text("header.updateSessionKey", bundle: .module)
+                }
+                Button {
+                    state.showingSettings = true
+                } label: {
+                    Text("header.openSettings", bundle: .module)
+                }
+            } label: {
+                HStack(spacing: 4) {
+                    Text(name)
+                        .font(.headline)
+                    Image(systemName: "chevron.down")
+                        .font(.caption2)
+                        .foregroundStyle(.secondary)
+                }
+            }
+            .menuStyle(.borderlessButton)
+            .fixedSize()
+        } else if let name = currentOrgName {
+            Text(name).font(.headline)
+        } else {
+            Text("usage.title", bundle: .module).font(.headline)
+        }
     }
 
     @ViewBuilder

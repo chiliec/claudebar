@@ -179,6 +179,59 @@ struct SessionExpiredViewTests {
     }
 }
 
+// MARK: - UsageDetailView Header Tests
+
+@MainActor
+@Suite
+struct UsageDetailViewHeaderTests {
+    private func makeAuthedState(orgs: [Organization]) -> AppState {
+        let state = AppState(
+            keychain: KeychainService(serviceName: "com.claudebar.test"),
+            orgListStore: InMemoryOrgListStore()
+        )
+        state.signOut()
+        state.sessionKey = "sk"
+        state.orgId = orgs.first?.uuid
+        state.organizations = orgs
+        return state
+    }
+
+    @Test func showsCurrentOrgNameInHeader() throws {
+        let state = makeAuthedState(orgs: [
+            Organization(uuid: "org-1", name: "Acme", capabilities: nil),
+        ])
+        let view = UsageDetailView(state: state)
+        let inspected = try view.inspect()
+        _ = try inspected.find(text: "Acme")
+    }
+
+    @Test func showsMenuWhenMultipleOrgs() throws {
+        let state = makeAuthedState(orgs: [
+            Organization(uuid: "org-1", name: "Personal", capabilities: nil),
+            Organization(uuid: "org-2", name: "Work", capabilities: nil),
+        ])
+        let view = UsageDetailView(state: state)
+        let inspected = try view.inspect()
+        _ = try inspected.find(ViewType.Menu.self)
+    }
+
+    @Test func noMenuForSingleOrg() throws {
+        let state = makeAuthedState(orgs: [
+            Organization(uuid: "org-1", name: "Solo", capabilities: nil),
+        ])
+        let view = UsageDetailView(state: state)
+        let inspected = try view.inspect()
+        #expect(throws: (any Error).self) { try inspected.find(ViewType.Menu.self) }
+    }
+
+    @Test func fallsBackToTitleWhenNoOrgName() throws {
+        let state = makeAuthedState(orgs: [])
+        let view = UsageDetailView(state: state)
+        let inspected = try view.inspect()
+        _ = try inspected.find(text: "Claude Usage")
+    }
+}
+
 // MARK: - RingProgressView Tests
 
 @MainActor
