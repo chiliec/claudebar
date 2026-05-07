@@ -236,6 +236,12 @@ public final class AppState {
             if organizationDetails == nil {
                 organizationDetails = try? await client.fetchOrganizationDetails()
             }
+            // Best-effort background refresh of the org list.
+            Task { [weak self, sessionKey] in
+                if let fetched = try? await ClaudeAPIClient.fetchOrganizations(sessionKey: sessionKey) {
+                    await MainActor.run { self?.applyRefreshedOrgList(fetched) }
+                }
+            }
         } catch APIError.sessionExpired {
             handleSessionExpired()
         } catch APIError.rateLimited {
@@ -244,6 +250,13 @@ public final class AppState {
             self.error = .network(error.localizedDescription)
         }
         isLoading = false
+    }
+
+    /// Replace the cached org list with a fresh server response.
+    /// Empty responses are ignored to avoid wiping the cache on a transient blip.
+    public func applyRefreshedOrgList(_ fetched: [Organization]) {
+        guard !fetched.isEmpty else { return }
+        organizations = fetched
     }
 
     // MARK: - Polling

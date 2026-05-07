@@ -415,6 +415,28 @@ struct AppStateTests {
         state.signOut()
     }
 
+    // MARK: - Background Org-List Refresh
+
+    @Test func applyRefreshedOrgListReplacesCache() {
+        let state = makeState()
+        state.organizations = [Organization(uuid: "old", name: "Old", capabilities: nil)]
+        let refreshed = [
+            Organization(uuid: "old", name: "Renamed", capabilities: nil),
+            Organization(uuid: "new", name: "Added", capabilities: nil),
+        ]
+        state.applyRefreshedOrgList(refreshed)
+        #expect(state.organizations.count == 2)
+        #expect(state.organizations[0].name == "Renamed")
+    }
+
+    @Test func applyRefreshedOrgListIgnoresEmptyResponse() {
+        let state = makeState()
+        state.organizations = [Organization(uuid: "x", name: "Keep", capabilities: nil)]
+        state.applyRefreshedOrgList([])
+        #expect(state.organizations.count == 1)
+        #expect(state.organizations[0].name == "Keep")
+    }
+
     // MARK: - Initial UI State
 
     @Test func initialLoadingState() {
