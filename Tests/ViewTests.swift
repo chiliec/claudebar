@@ -142,22 +142,32 @@ struct SetupViewTests {
 @Suite
 struct SessionExpiredViewTests {
     private func makeState() -> AppState {
-        AppState(keychain: KeychainService(serviceName: "com.claudebar.test"))
+        AppState(
+            keychain: KeychainService(serviceName: "com.claudebar.test"),
+            orgListStore: InMemoryOrgListStore()
+        )
     }
 
-    @Test func showsExpiredTitle() throws {
+    @Test func showsGenericTitleWhenNoOrgCached() throws {
         let state = makeState()
         let view = SessionExpiredView(state: state)
         let inspected = try view.inspect()
-
         _ = try inspected.find(text: "Session Expired")
+    }
+
+    @Test func showsOrgNameInTitleWhenCached() throws {
+        let state = makeState()
+        state.orgId = "org-123"
+        state.organizations = [Organization(uuid: "org-123", name: "Acme", capabilities: nil)]
+        let view = SessionExpiredView(state: state)
+        let inspected = try view.inspect()
+        _ = try inspected.find(text: "Reconnect Acme")
     }
 
     @Test func showsReconnectButton() throws {
         let state = makeState()
         let view = SessionExpiredView(state: state)
         let inspected = try view.inspect()
-
         _ = try inspected.find(button: "Reconnect")
     }
 
@@ -165,7 +175,6 @@ struct SessionExpiredViewTests {
         let state = makeState()
         let view = SessionExpiredView(state: state)
         let inspected = try view.inspect()
-
         _ = try inspected.find(ViewType.TextField.self)
     }
 }
