@@ -294,11 +294,20 @@ struct AppStateTests {
 
     @Test func switchOrganizationDoesNothingWithoutSessionKey() async {
         let state = makeState()
-        // No sessionKey set
+        // No sessionKey set; pre-populate state we can verify is left alone
+        state.usage = UsageResponse(
+            fiveHour: WindowUsage(utilization: 0.5, resetsAt: nil),
+            sevenDay: WindowUsage(utilization: 0.3, resetsAt: nil),
+            sevenDaySonnet: nil, sevenDayOpus: nil, extraUsage: nil
+        )
+        state.error = .rateLimited
+
         let org = Organization(uuid: "org-2", name: "New", capabilities: nil)
         await state.switchOrganization(to: org)
 
         #expect(state.orgId == nil, "Should not save orgId without sessionKey")
+        #expect(state.usage?.fiveHour?.utilization == 0.5, "Should not clear usage on early return")
+        #expect(state.error == .rateLimited, "Should not clear error on early return")
     }
 
     // MARK: - Initial UI State

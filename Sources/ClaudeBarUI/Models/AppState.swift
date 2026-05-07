@@ -137,10 +137,11 @@ public final class AppState {
     /// a fresh fetch via startPolling().
     public func switchOrganization(to org: Organization) async {
         guard let sessionKey else { return }
-        usage = nil
-        organizationDetails = nil
         do {
             try saveCredentials(sessionKey: sessionKey, orgId: org.uuid)
+            usage = nil
+            organizationDetails = nil
+            error = nil
             startPolling()
         } catch {
             self.error = .network(error.localizedDescription)
