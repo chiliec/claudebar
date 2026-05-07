@@ -11,6 +11,14 @@ public final class AppState {
     }
     public var isAuthenticated: Bool { sessionKey != nil && orgId != nil }
 
+    // MARK: - Pending Key-Update State
+    /// Set while the user is updating their session key and the new key
+    /// belongs to a different account (current orgId is not in the new org list).
+    /// While true, polling is paused and the Settings UI shows an inline picker.
+    public var pendingOrgPick: Bool = false
+    public var pendingSessionKey: String?
+    public var pendingOrganizations: [Organization] = []
+
     // MARK: - Usage State
     public var usage: UsageResponse?
     public var organizationDetails: OrganizationDetails?
@@ -97,6 +105,9 @@ public final class AppState {
         usage = nil
         organizationDetails = nil
         organizations = []
+        pendingSessionKey = nil
+        pendingOrganizations = []
+        pendingOrgPick = false
     }
 
     /// Non-destructive recovery: wipes sessionKey + usage but preserves
@@ -145,6 +156,71 @@ public final class AppState {
             startPolling()
         } catch {
             self.error = .network(error.localizedDescription)
+        }
+    }
+
+    /// Validate a new session key by fetching the org list, then either
+    /// preserve the current orgId (if still in the list) or enter a pending
+    /// pick state that holds the new key transiently until the user confirms.
+    public func updateSessionKey(_ newKey: String) async {
+        isLoading = true
+        error = nil
+        do {
+            let fetched = try await ClaudeAPIClient.fetchOrganizations(sessionKey: newKey)
+            applyKeyUpdateResult(newSessionKey: newKey, fetchedOrgs: fetched)
+        } catch let apiError as APIError {
+            error = .api(apiError)
+        } catch {
+            self.error = .network(error.localizedDescription)
+        }
+        isLoading = false
+    }
+
+    /// Pure state-machine step extracted from updateSessionKey for testability.
+    /// Decides between "preserve current org" and "enter pending pick".
+    public func applyKeyUpdateResult(newSessionKey: String, fetchedOrgs: [Organization]) {
+        if let currentOrgId = orgId, fetchedOrgs.contains(where: { $0.uuid == currentOrgId }) {
+            // Common case: cookie rotated, account/org unchanged
+            do {
+                try saveCredentials(sessionKey: newSessionKey, orgId: currentOrgId)
+                organizations = fetchedOrgs
+                startPolling()
+            } catch {
+                self.error = .network(error.localizedDescription)
+            }
+        } else {
+            // Different account: hold new key transiently, wait for user pick
+            stopPolling()
+            pendingSessionKey = newSessionKey
+            pendingOrganizations = fetchedOrgs
+            pendingOrgPick = true
+        }
+    }
+
+    /// Commit the held sessionKey + the picked org atomically, then resume polling.
+    public func confirmPendingOrg(_ org: Organization) async {
+        guard let pending = pendingSessionKey else { return }
+        do {
+            try saveCredentials(sessionKey: pending, orgId: org.uuid)
+            organizations = pendingOrganizations
+            usage = nil
+            organizationDetails = nil
+            pendingSessionKey = nil
+            pendingOrganizations = []
+            pendingOrgPick = false
+            startPolling()
+        } catch {
+            self.error = .network(error.localizedDescription)
+        }
+    }
+
+    /// Discard pending key/org state. Old credentials are untouched.
+    public func cancelPendingOrgPick() {
+        pendingSessionKey = nil
+        pendingOrganizations = []
+        pendingOrgPick = false
+        if isAuthenticated {
+            startPolling()
         }
     }
 

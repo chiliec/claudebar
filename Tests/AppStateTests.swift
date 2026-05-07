@@ -310,6 +310,96 @@ struct AppStateTests {
         #expect(state.error == .rateLimited, "Should not clear error on early return")
     }
 
+    // MARK: - Update Session Key
+
+    @Test func applyKeyUpdateResultPreservesOrgIdWhenStillValid() throws {
+        let state = makeState()
+        try state.saveCredentials(sessionKey: "sk-old", orgId: "org-1")
+        state.organizations = [Organization(uuid: "org-1", name: "Old", capabilities: nil)]
+        state.stopPolling()
+
+        let newOrgs = [
+            Organization(uuid: "org-1", name: "Renamed", capabilities: nil),
+            Organization(uuid: "org-2", name: "Other", capabilities: nil),
+        ]
+        state.applyKeyUpdateResult(newSessionKey: "sk-new", fetchedOrgs: newOrgs)
+
+        #expect(state.sessionKey == "sk-new")
+        #expect(state.orgId == "org-1")
+        #expect(state.organizations.count == 2)
+        #expect(!state.pendingOrgPick)
+
+        state.signOut()
+    }
+
+    @Test func applyKeyUpdateResultEntersPendingPickWhenOrgMissing() throws {
+        let state = makeState()
+        try state.saveCredentials(sessionKey: "sk-old", orgId: "org-1")
+        state.organizations = [Organization(uuid: "org-1", name: "Old", capabilities: nil)]
+        state.stopPolling()
+
+        let newOrgs = [
+            Organization(uuid: "org-2", name: "Different", capabilities: nil),
+            Organization(uuid: "org-3", name: "Also", capabilities: nil),
+        ]
+        state.applyKeyUpdateResult(newSessionKey: "sk-new", fetchedOrgs: newOrgs)
+
+        // Old creds intact in keychain
+        #expect(state.sessionKey == "sk-old")
+        #expect(state.orgId == "org-1")
+        // Pending state populated
+        #expect(state.pendingOrgPick)
+        #expect(state.pendingSessionKey == "sk-new")
+        #expect(state.pendingOrganizations.count == 2)
+        // Cached orgs NOT touched yet
+        #expect(state.organizations.count == 1)
+        #expect(state.organizations[0].name == "Old")
+
+        state.signOut()
+    }
+
+    @Test func confirmPendingOrgCommitsAndClearsPending() async throws {
+        let state = makeState()
+        try state.saveCredentials(sessionKey: "sk-old", orgId: "org-1")
+        state.stopPolling()
+
+        // Simulate pending state
+        state.pendingSessionKey = "sk-new"
+        state.pendingOrganizations = [Organization(uuid: "org-7", name: "New", capabilities: nil)]
+        state.pendingOrgPick = true
+
+        await state.confirmPendingOrg(Organization(uuid: "org-7", name: "New", capabilities: nil))
+
+        #expect(state.sessionKey == "sk-new")
+        #expect(state.orgId == "org-7")
+        #expect(state.organizations.count == 1)
+        #expect(state.organizations[0].uuid == "org-7")
+        #expect(!state.pendingOrgPick)
+        #expect(state.pendingSessionKey == nil)
+        #expect(state.pendingOrganizations.isEmpty)
+
+        state.signOut()
+    }
+
+    @Test func cancelPendingOrgPickRevertsTransientState() throws {
+        let state = makeState()
+        try state.saveCredentials(sessionKey: "sk-old", orgId: "org-1")
+
+        state.pendingSessionKey = "sk-new"
+        state.pendingOrganizations = [Organization(uuid: "org-2", name: "X", capabilities: nil)]
+        state.pendingOrgPick = true
+
+        state.cancelPendingOrgPick()
+
+        #expect(state.sessionKey == "sk-old")
+        #expect(state.orgId == "org-1")
+        #expect(!state.pendingOrgPick)
+        #expect(state.pendingSessionKey == nil)
+        #expect(state.pendingOrganizations.isEmpty)
+
+        state.signOut()
+    }
+
     // MARK: - Initial UI State
 
     @Test func initialLoadingState() {
