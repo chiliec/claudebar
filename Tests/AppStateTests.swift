@@ -181,11 +181,13 @@ struct AppStateTests {
         #expect(!state.isAuthenticated, "Not yet authenticated until org is selected")
     }
 
-    @Test func selectOrganizationSavesCredentials() throws {
+    @Test func switchOrganizationSavesCredentials() async throws {
         let state = makeState()
         state.sessionKey = "sk-ant-test"
+        state.stopPolling()
 
-        try state.saveCredentials(sessionKey: "sk-ant-test", orgId: "org-2")
+        let org = Organization(uuid: "org-2", name: "Work", capabilities: nil)
+        await state.switchOrganization(to: org)
 
         #expect(state.sessionKey == "sk-ant-test")
         #expect(state.orgId == "org-2")
@@ -261,6 +263,42 @@ struct AppStateTests {
         #expect(state.usage == nil)
         #expect(state.error == .sessionExpired)
         #expect(!state.isAuthenticated)
+    }
+
+    // MARK: - Switch Organization
+
+    @Test func switchOrganizationSavesAndClearsStaleUsage() async throws {
+        let state = makeState()
+        try state.saveCredentials(sessionKey: "sk", orgId: "org-1")
+        state.usage = UsageResponse(
+            fiveHour: WindowUsage(utilization: 0.5, resetsAt: nil),
+            sevenDay: WindowUsage(utilization: 0.3, resetsAt: nil),
+            sevenDaySonnet: nil, sevenDayOpus: nil, extraUsage: nil
+        )
+        state.organizationDetails = OrganizationDetails(
+            uuid: "org-1", name: "Old", rateLimitTier: "max5x"
+        )
+
+        // Don't actually start polling in tests — just verify state mutations
+        state.stopPolling()
+        let newOrg = Organization(uuid: "org-2", name: "New", capabilities: nil)
+        await state.switchOrganization(to: newOrg)
+
+        #expect(state.orgId == "org-2")
+        #expect(state.usage == nil)
+        #expect(state.organizationDetails == nil)
+        #expect(state.sessionKey == "sk")  // unchanged
+
+        state.signOut()
+    }
+
+    @Test func switchOrganizationDoesNothingWithoutSessionKey() async {
+        let state = makeState()
+        // No sessionKey set
+        let org = Organization(uuid: "org-2", name: "New", capabilities: nil)
+        await state.switchOrganization(to: org)
+
+        #expect(state.orgId == nil, "Should not save orgId without sessionKey")
     }
 
     // MARK: - Initial UI State

@@ -132,8 +132,13 @@ public final class AppState {
         isLoading = false
     }
 
-    public func selectOrganization(_ org: Organization) async {
+    /// Switch to a different organization while keeping the current sessionKey.
+    /// Clears stale usage/tier data (tier may differ between orgs) and triggers
+    /// a fresh fetch via startPolling().
+    public func switchOrganization(to org: Organization) async {
         guard let sessionKey else { return }
+        usage = nil
+        organizationDetails = nil
         do {
             try saveCredentials(sessionKey: sessionKey, orgId: org.uuid)
             startPolling()

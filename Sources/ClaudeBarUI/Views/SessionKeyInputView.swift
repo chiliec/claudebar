@@ -68,7 +68,7 @@ struct SessionKeyInputView: View {
                 .onChange(of: selectedOrgId) { _, newValue in
                     guard let orgId = newValue,
                           let org = state.organizations.first(where: { $0.uuid == orgId }) else { return }
-                    Task { await state.selectOrganization(org) }
+                    Task { await state.switchOrganization(to: org) }
                 }
             }
 
