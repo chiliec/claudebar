@@ -220,14 +220,16 @@ struct RingProgressViewTests {
 @Suite
 struct SettingsViewTests {
     private func makeState() -> AppState {
-        AppState(keychain: KeychainService(serviceName: "com.claudebar.test"))
+        AppState(
+            keychain: KeychainService(serviceName: "com.claudebar.test"),
+            orgListStore: InMemoryOrgListStore()
+        )
     }
 
     @Test func showsTitle() throws {
         let state = makeState()
         let view = SettingsView(state: state)
         let inspected = try view.inspect()
-
         _ = try inspected.find(text: "Settings")
     }
 
@@ -235,41 +237,95 @@ struct SettingsViewTests {
         let state = makeState()
         let view = SettingsView(state: state)
         let inspected = try view.inspect()
-
         _ = try inspected.find(text: "Not connected")
     }
 
-    @Test func showsConnectedWhenAuthenticated() throws {
+    @Test func showsConnectedAsOrgNameWhenAuthenticated() throws {
+        let state = makeState()
+        state.sessionKey = "sk-test"
+        state.orgId = "org-123"
+        state.organizations = [Organization(uuid: "org-123", name: "Acme", capabilities: nil)]
+        let view = SettingsView(state: state)
+        let inspected = try view.inspect()
+        _ = try inspected.find(text: "Connected as Acme")
+    }
+
+    @Test func showsSessionKeyFieldWhenAuthenticated() throws {
         let state = makeState()
         state.sessionKey = "sk-test"
         state.orgId = "org-123"
         let view = SettingsView(state: state)
         let inspected = try view.inspect()
+        _ = try inspected.find(ViewType.SecureField.self)
+    }
 
-        _ = try inspected.find(text: "Connected")
+    @Test func showsUpdateButtonWhenAuthenticated() throws {
+        let state = makeState()
+        state.sessionKey = "sk-test"
+        state.orgId = "org-123"
+        let view = SettingsView(state: state)
+        let inspected = try view.inspect()
+        _ = try inspected.find(button: "Update")
+    }
+
+    @Test func showsSignOutButtonWhenAuthenticated() throws {
+        let state = makeState()
+        state.sessionKey = "sk-test"
+        state.orgId = "org-123"
+        let view = SettingsView(state: state)
+        let inspected = try view.inspect()
+        _ = try inspected.find(button: "Sign out")
+    }
+
+    @Test func showsOrgPickerLabelWhenMultipleOrgs() throws {
+        let state = makeState()
+        state.sessionKey = "sk-test"
+        state.orgId = "org-1"
+        state.organizations = [
+            Organization(uuid: "org-1", name: "Personal", capabilities: nil),
+            Organization(uuid: "org-2", name: "Work", capabilities: nil),
+        ]
+        let view = SettingsView(state: state)
+        let inspected = try view.inspect()
+        _ = try inspected.find(text: "Organization:")
+    }
+
+    @Test func hidesOrgPickerForSingleOrg() throws {
+        let state = makeState()
+        state.sessionKey = "sk-test"
+        state.orgId = "org-1"
+        state.organizations = [Organization(uuid: "org-1", name: "Solo", capabilities: nil)]
+        let view = SettingsView(state: state)
+        let inspected = try view.inspect()
+        #expect(throws: (any Error).self) { try inspected.find(text: "Organization:") }
+    }
+
+    @Test func showsPendingOrgPickerInWrongAccountState() throws {
+        let state = makeState()
+        state.sessionKey = "sk-old"
+        state.orgId = "org-1"
+        state.pendingSessionKey = "sk-new"
+        state.pendingOrganizations = [
+            Organization(uuid: "org-9", name: "DifferentAccount", capabilities: nil),
+        ]
+        state.pendingOrgPick = true
+        let view = SettingsView(state: state)
+        let inspected = try view.inspect()
+        _ = try inspected.find(text: "This key belongs to a different account. Pick org:")
+        _ = try inspected.find(text: "DifferentAccount")
     }
 
     @Test func showsQuitButton() throws {
         let state = makeState()
         let view = SettingsView(state: state)
         let inspected = try view.inspect()
-
         _ = try inspected.find(button: "Quit ClaudeBar")
-    }
-
-    @Test func showsUpdateSessionKeyButton() throws {
-        let state = makeState()
-        let view = SettingsView(state: state)
-        let inspected = try view.inspect()
-
-        _ = try inspected.find(button: "Update Session Key")
     }
 
     @Test func showsDoneButton() throws {
         let state = makeState()
         let view = SettingsView(state: state)
         let inspected = try view.inspect()
-
         _ = try inspected.find(button: "Done")
     }
 }
