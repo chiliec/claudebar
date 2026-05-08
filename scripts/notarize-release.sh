@@ -94,11 +94,15 @@ gh release create "v$VERSION" "$ZIP_FILE" \
 Paste this in Terminal:
 
 \`\`\`bash
-curl -fsSL https://github.com/chiliec/claudebar/releases/latest/download/ClaudeBar.zip -o /tmp/cb.zip && unzip -oq /tmp/cb.zip -d /tmp && rm -rf /Applications/ClaudeBar.app && mv /tmp/ClaudeBar.app /Applications/ && open /Applications/ClaudeBar.app
+curl -fsSL https://github.com/chiliec/ClaudeBar/releases/latest/download/ClaudeBar.zip -o /tmp/cb.zip && \\
+  unzip -oq /tmp/cb.zip -d /tmp && \\
+  rm -rf /Applications/ClaudeBar.app && \\
+  mv /tmp/ClaudeBar.app /Applications/ && \\
+  open /Applications/ClaudeBar.app
 \`\`\`
 
 This release is signed and notarized by Apple — no Gatekeeper bypass needed.
 NOTES
 )"
 
-echo "==> Done! Release: https://github.com/chiliec/claudebar/releases/tag/v$VERSION"
+echo "==> Done! Release: https://github.com/chiliec/ClaudeBar/releases/tag/v$VERSION"
