@@ -163,9 +163,11 @@ public enum SubscriptionTier: Equatable {
         case nil:
             // No rate_limit_tier — infer from capabilities as a last resort.
             if let caps = capabilities {
-                if caps.contains("claude_max") { return .max5x }
-                if caps.contains("claude_pro") { return .pro }
-                if caps.contains("claude_team") { return .team }
+                if caps.contains("claude_enterprise") { return .enterprise }
+                if caps.contains("claude_max")        { return .max5x }
+                if caps.contains("claude_team") ||
+                   caps.contains("raven")             { return .team }
+                if caps.contains("claude_pro")        { return .pro }
             }
             return .unknown(nil)
         }
