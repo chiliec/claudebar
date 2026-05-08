@@ -48,7 +48,12 @@ cat > "$NOTES_FILE" <<NOTES
 Paste this in Terminal:
 
 \`\`\`bash
-curl -fsSL https://github.com/chiliec/claudebar/releases/latest/download/ClaudeBar.zip -o /tmp/cb.zip && unzip -oq /tmp/cb.zip -d /tmp && xattr -dr com.apple.quarantine /tmp/ClaudeBar.app && rm -rf /Applications/ClaudeBar.app && mv /tmp/ClaudeBar.app /Applications/ && open /Applications/ClaudeBar.app
+curl -fsSL https://github.com/chiliec/claudebar/releases/latest/download/ClaudeBar.zip -o /tmp/cb.zip && \\
+  unzip -oq /tmp/cb.zip -d /tmp && \\
+  /usr/bin/xattr -dr com.apple.quarantine /tmp/ClaudeBar.app && \\
+  rm -rf /Applications/ClaudeBar.app && \\
+  mv /tmp/ClaudeBar.app /Applications/ && \\
+  open /Applications/ClaudeBar.app
 \`\`\`
 NOTES
 gh release create "v$VERSION" "$ZIP_FILE" \
