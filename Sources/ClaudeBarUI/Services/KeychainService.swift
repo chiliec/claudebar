@@ -13,20 +13,26 @@ public struct KeychainService {
             throw KeychainError.encodingFailed
         }
 
-        // Delete existing item first (upsert pattern)
-        try? delete(account: account)
-
-        let query: [String: Any] = [
+        let identity: [String: Any] = [
             kSecClass as String: kSecClassGenericPassword,
             kSecAttrService as String: serviceName,
             kSecAttrAccount as String: account,
-            kSecValueData as String: data,
-            kSecAttrAccessible as String: kSecAttrAccessibleWhenUnlocked,
         ]
 
-        let status = SecItemAdd(query as CFDictionary, nil)
-        guard status == errSecSuccess else {
-            throw KeychainError.saveFailed(status)
+        // Upsert: update if present, add if not. delete+add fails when the
+        // existing item's ACL blocks delete (errSecDuplicateItem on re-add).
+        let updateStatus = SecItemUpdate(identity as CFDictionary, [kSecValueData as String: data] as CFDictionary)
+        if updateStatus == errSecSuccess { return }
+        if updateStatus != errSecItemNotFound {
+            throw KeychainError.saveFailed(updateStatus)
+        }
+
+        var addQuery = identity
+        addQuery[kSecValueData as String] = data
+        addQuery[kSecAttrAccessible as String] = kSecAttrAccessibleWhenUnlocked
+        let addStatus = SecItemAdd(addQuery as CFDictionary, nil)
+        guard addStatus == errSecSuccess else {
+            throw KeychainError.saveFailed(addStatus)
         }
     }
 
