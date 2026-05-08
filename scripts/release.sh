@@ -40,18 +40,20 @@ git tag -f "v$VERSION"
 git push origin main --tags --force
 
 echo "==> Creating GitHub release"
-gh release create "v$VERSION" "$ZIP_FILE" \
-    --title "ClaudeBar v$VERSION" \
-    --notes "$(cat <<'NOTES'
+NOTES_FILE=$(mktemp)
+trap 'rm -f "$NOTES_FILE"' EXIT
+cat > "$NOTES_FILE" <<NOTES
 ### Install
 
-Download `ClaudeBar.zip`, unzip, then run:
+Download \`$APP_NAME-v$VERSION.zip\`, unzip, then run:
 
-```bash
+\`\`\`bash
 xattr -d com.apple.quarantine ClaudeBar.app
 rm -rf /Applications/ClaudeBar.app && mv ClaudeBar.app /Applications/
-```
+\`\`\`
 NOTES
-)"
+gh release create "v$VERSION" "$ZIP_FILE" \
+    --title "ClaudeBar v$VERSION" \
+    --notes-file "$NOTES_FILE"
 
 echo "==> Done! Release: https://github.com/chiliec/claudebar/releases/tag/v$VERSION"
