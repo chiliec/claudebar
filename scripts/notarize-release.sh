@@ -16,7 +16,7 @@ VERSION="${1:?Usage: ./scripts/notarize-release.sh <version> (e.g. 1.1.0)}"
 APP_NAME="ClaudeBar"
 BUILD_DIR=".build/release"
 BUNDLE_DIR="$BUILD_DIR/$APP_NAME.app"
-ZIP_FILE="$BUILD_DIR/$APP_NAME-v$VERSION.zip"
+ZIP_FILE="$BUILD_DIR/$APP_NAME.zip"
 SIGN_IDENTITY="Developer ID Application"
 KEYCHAIN_PROFILE="claudebar-notarize"
 
@@ -62,7 +62,7 @@ codesign --verify --verbose=2 "$BUNDLE_DIR"
 
 echo "==> Zipping for notarization"
 rm -f "$ZIP_FILE"
-cd "$BUILD_DIR" && zip -r -q "$APP_NAME-v$VERSION.zip" "$APP_NAME.app" && cd - > /dev/null
+cd "$BUILD_DIR" && zip -r -q "$APP_NAME.zip" "$APP_NAME.app" && cd - > /dev/null
 
 echo "==> Submitting for notarization (this may take a few minutes)..."
 xcrun notarytool submit "$ZIP_FILE" \
@@ -74,7 +74,7 @@ xcrun stapler staple "$BUNDLE_DIR"
 
 echo "==> Re-zipping with stapled ticket"
 rm -f "$ZIP_FILE"
-cd "$BUILD_DIR" && zip -r -q "$APP_NAME-v$VERSION.zip" "$APP_NAME.app" && cd - > /dev/null
+cd "$BUILD_DIR" && zip -r -q "$APP_NAME.zip" "$APP_NAME.app" && cd - > /dev/null
 
 echo "==> Running tests"
 swift test 2>&1 | tail -3
@@ -91,13 +91,13 @@ gh release create "v$VERSION" "$ZIP_FILE" \
     --notes "$(cat <<NOTES
 ### Install
 
-Download \`ClaudeBar-v$VERSION.zip\`, unzip, and move to Applications:
+Paste this in Terminal:
 
 \`\`\`bash
-mv ClaudeBar.app /Applications/
+curl -fsSL https://github.com/chiliec/claudebar/releases/latest/download/ClaudeBar.zip -o /tmp/cb.zip && unzip -oq /tmp/cb.zip -d /tmp && rm -rf /Applications/ClaudeBar.app && mv /tmp/ClaudeBar.app /Applications/ && open /Applications/ClaudeBar.app
 \`\`\`
 
-This release is signed and notarized by Apple.
+This release is signed and notarized by Apple — no Gatekeeper bypass needed.
 NOTES
 )"
 

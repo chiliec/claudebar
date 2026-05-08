@@ -5,7 +5,7 @@ VERSION="${1:?Usage: ./scripts/release.sh <version> (e.g. 1.1.0)}"
 APP_NAME="ClaudeBar"
 BUILD_DIR=".build/release"
 BUNDLE_DIR="$BUILD_DIR/$APP_NAME.app"
-ZIP_FILE="$BUILD_DIR/$APP_NAME-v$VERSION.zip"
+ZIP_FILE="$BUILD_DIR/$APP_NAME.zip"
 SIGN_IDENTITY="Apple Development: Vladimir Babin (8FNR8DGE9N)"
 
 echo "==> Updating version to $VERSION"
@@ -28,7 +28,7 @@ codesign --force --sign "$SIGN_IDENTITY" "$BUNDLE_DIR"
 
 echo "==> Zipping"
 rm -f "$ZIP_FILE"
-cd "$BUILD_DIR" && zip -r -q "$APP_NAME-v$VERSION.zip" "$APP_NAME.app" && cd - > /dev/null
+cd "$BUILD_DIR" && zip -r -q "$APP_NAME.zip" "$APP_NAME.app" && cd - > /dev/null
 
 echo "==> Running tests"
 swift test 2>&1 | tail -3
@@ -45,11 +45,10 @@ trap 'rm -f "$NOTES_FILE"' EXIT
 cat > "$NOTES_FILE" <<NOTES
 ### Install
 
-Download \`$APP_NAME-v$VERSION.zip\`, unzip, then run:
+Paste this in Terminal:
 
 \`\`\`bash
-xattr -d com.apple.quarantine ClaudeBar.app
-rm -rf /Applications/ClaudeBar.app && mv ClaudeBar.app /Applications/
+curl -fsSL https://github.com/chiliec/claudebar/releases/latest/download/ClaudeBar.zip -o /tmp/cb.zip && unzip -oq /tmp/cb.zip -d /tmp && xattr -dr com.apple.quarantine /tmp/ClaudeBar.app && rm -rf /Applications/ClaudeBar.app && mv /tmp/ClaudeBar.app /Applications/ && open /Applications/ClaudeBar.app
 \`\`\`
 NOTES
 gh release create "v$VERSION" "$ZIP_FILE" \
