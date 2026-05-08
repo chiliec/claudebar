@@ -174,6 +174,9 @@ struct UsageModelTests {
         #expect(SubscriptionTier.from(rateLimitTier: "default_claude_team", capabilities: nil) == .team)
         #expect(SubscriptionTier.from(rateLimitTier: "some_future_tier", capabilities: nil) == .unknown("tier"))
         #expect(SubscriptionTier.from(rateLimitTier: "default_claude_ai", capabilities: nil) == .pro)
+        #expect(SubscriptionTier.from(rateLimitTier: "default_raven", capabilities: nil) == .team)
+        #expect(SubscriptionTier.from(rateLimitTier: "default_raven", capabilities: ["claude_team"]) == .team)
+        #expect(SubscriptionTier.from(rateLimitTier: "default_raven", capabilities: ["claude_enterprise"]) == .enterprise)
     }
 
     @Test func subscriptionTierFallsBackToCapabilities() {

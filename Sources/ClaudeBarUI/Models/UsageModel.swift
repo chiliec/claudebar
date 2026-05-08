@@ -151,6 +151,9 @@ public enum SubscriptionTier: Equatable {
         case "default_claude_max_5x": return .max5x
         case "default_claude_max_20x": return .max20x
         case "default_claude_team": return .team
+        case "default_raven":
+            if capabilities?.contains("claude_enterprise") == true { return .enterprise }
+            return .team
         case let other?:
             // Unknown explicit tier — preserve raw suffix for debugging.
             if let raw = other.split(separator: "_").last.map(String.init) {
