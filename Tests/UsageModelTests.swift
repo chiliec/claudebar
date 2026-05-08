@@ -182,6 +182,10 @@ struct UsageModelTests {
         #expect(SubscriptionTier.from(rateLimitTier: nil, capabilities: []) == .unknown(nil))
     }
 
+    @Test func enterpriseTierLocalizationKey() {
+        #expect(SubscriptionTier.enterprise.localizationKey == "tier.enterprise")
+    }
+
     @Test func decodeOrganizationDetails() throws {
         // Truncated version of the real /organizations/{id} response.
         let json = """

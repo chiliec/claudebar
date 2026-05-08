@@ -139,6 +139,7 @@ public enum SubscriptionTier: Equatable {
     case max5x
     case max20x
     case team
+    case enterprise
     case unknown(String?)
 
     /// Parse from Claude.ai's `rate_limit_tier` (e.g. `default_claude_max_5x`).
@@ -172,6 +173,7 @@ public enum SubscriptionTier: Equatable {
         case .max5x: return "tier.max5x"
         case .max20x: return "tier.max20x"
         case .team: return "tier.team"
+        case .enterprise: return "tier.enterprise"
         case .unknown: return "tier.unknown"
         }
     }
