@@ -146,7 +146,8 @@ public enum SubscriptionTier: Equatable {
     /// Falls back to `capabilities` when the tier string is missing.
     public static func from(rateLimitTier: String?, capabilities: [String]?) -> SubscriptionTier {
         switch rateLimitTier {
-        case "default_claude_pro": return .pro
+        case "default_claude_pro", "default_claude_ai":
+            return .pro
         case "default_claude_max_5x": return .max5x
         case "default_claude_max_20x": return .max20x
         case "default_claude_team": return .team

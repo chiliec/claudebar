@@ -173,6 +173,7 @@ struct UsageModelTests {
         #expect(SubscriptionTier.from(rateLimitTier: "default_claude_max_20x", capabilities: nil) == .max20x)
         #expect(SubscriptionTier.from(rateLimitTier: "default_claude_team", capabilities: nil) == .team)
         #expect(SubscriptionTier.from(rateLimitTier: "some_future_tier", capabilities: nil) == .unknown("tier"))
+        #expect(SubscriptionTier.from(rateLimitTier: "default_claude_ai", capabilities: nil) == .pro)
     }
 
     @Test func subscriptionTierFallsBackToCapabilities() {
