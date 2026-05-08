@@ -186,6 +186,7 @@ struct UsageModelTests {
         #expect(SubscriptionTier.from(rateLimitTier: nil, capabilities: []) == .unknown(nil))
         #expect(SubscriptionTier.from(rateLimitTier: nil, capabilities: ["claude_enterprise"]) == .enterprise)
         #expect(SubscriptionTier.from(rateLimitTier: nil, capabilities: ["raven"]) == .team)
+        #expect(SubscriptionTier.from(rateLimitTier: nil, capabilities: ["claude_team"]) == .team)
     }
 
     @Test func enterpriseTierLocalizationKey() {
