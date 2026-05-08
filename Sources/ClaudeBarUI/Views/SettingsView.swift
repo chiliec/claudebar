@@ -143,7 +143,7 @@ public struct SettingsView: View {
                 .foregroundStyle(.secondary)
             Picker("", selection: orgSelectionBinding) {
                 ForEach(state.visibleOrganizations, id: \.uuid) { org in
-                    Text(org.name).tag(org.uuid as String?)
+                    Text(org.displayName).tag(org.uuid as String?)
                 }
             }
             .labelsHidden()
@@ -160,7 +160,7 @@ public struct SettingsView: View {
                 Button {
                     Task { await state.confirmPendingOrg(org) }
                 } label: {
-                    Text(org.name)
+                    Text(org.displayName)
                         .frame(maxWidth: .infinity, alignment: .leading)
                 }
                 .buttonStyle(.bordered)
@@ -181,7 +181,7 @@ public struct SettingsView: View {
 
     private func currentOrgName() -> String? {
         guard let orgId = state.orgId else { return nil }
-        return state.organizations.first(where: { $0.uuid == orgId })?.name
+        return state.organizations.first(where: { $0.uuid == orgId })?.displayName
     }
 
     private var orgSelectionBinding: Binding<String?> {

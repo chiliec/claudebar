@@ -84,6 +84,16 @@ public struct Organization: Codable, Equatable {
         self.capabilities = capabilities
     }
 
+    /// Strips the default `'s Organization` suffix Claude.ai assigns to
+    /// personal orgs (e.g. `Vladimir's Organization` → `Vladimir`).
+    public var displayName: String {
+        let suffix = "'s Organization"
+        if name.hasSuffix(suffix) {
+            return String(name.dropLast(suffix.count))
+        }
+        return name
+    }
+
     /// True when the org has at least one paid-plan capability marker.
     /// Used to hide free/individual orgs from the switcher UI — they
     /// have no usage worth tracking in the menu bar.

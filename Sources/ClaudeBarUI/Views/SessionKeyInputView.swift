@@ -75,7 +75,7 @@ struct SessionKeyInputView: View {
                     Text("setup.chooseOrganization", bundle: .module)
                         .tag(nil as String?)
                     ForEach(state.visibleOrganizations, id: \.uuid) { org in
-                        Text(org.name).tag(org.uuid as String?)
+                        Text(org.displayName).tag(org.uuid as String?)
                     }
                 }
                 .labelsHidden()

@@ -55,13 +55,15 @@ struct UsageDetailView: View {
     @ViewBuilder
     private var headerTitle: some View {
         let currentOrgName = state.orgId.flatMap { id in
-            state.organizations.first(where: { $0.uuid == id })?.name
+            state.organizations.first(where: { $0.uuid == id })?.displayName
         }
         if state.visibleOrganizations.count > 1, let name = currentOrgName {
             Menu {
                 ForEach(state.visibleOrganizations.filter { $0.uuid != state.orgId }, id: \.uuid) { org in
-                    Button(org.name) {
+                    Button {
                         Task { await state.switchOrganization(to: org) }
+                    } label: {
+                        Text(org.displayName)
                     }
                 }
                 Divider()

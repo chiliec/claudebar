@@ -19,7 +19,7 @@ public struct SessionExpiredView: View {
 
     private var titleString: String {
         if let orgId = state.orgId,
-           let name = state.organizations.first(where: { $0.uuid == orgId })?.name {
+           let name = state.organizations.first(where: { $0.uuid == orgId })?.displayName {
             return String(localized: "session.reconnect \(name)", bundle: .module)
         }
         return String(localized: "session.expired", bundle: .module)
