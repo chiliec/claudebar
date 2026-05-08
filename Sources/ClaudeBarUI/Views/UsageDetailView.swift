@@ -44,9 +44,32 @@ struct UsageDetailView: View {
         HStack {
             headerTitle
             Spacer()
+            if let details = state.organizationDetails {
+                tierPill(for: details.tier)
+            }
         }
         .padding(.horizontal, 16)
         .padding(.vertical, 12)
+    }
+
+    @ViewBuilder
+    private func tierPill(for tier: SubscriptionTier) -> some View {
+        let label = Group {
+            if case .unknown(let raw?) = tier {
+                Text(verbatim: raw.capitalized)
+            } else {
+                Text(LocalizedStringKey(tier.localizationKey), bundle: .module)
+            }
+        }
+        .font(.caption)
+        .padding(.horizontal, 8)
+        .padding(.vertical, 2)
+
+        if #available(macOS 26.0, *) {
+            label.glassEffect()
+        } else {
+            label.background(.quaternary).clipShape(Capsule())
+        }
     }
 
     @ViewBuilder
