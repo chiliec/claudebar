@@ -134,6 +134,28 @@ public struct OrganizationDetails: Codable {
     public var tier: SubscriptionTier { .from(rateLimitTier: rateLimitTier, capabilities: capabilities) }
 }
 
+public struct PlatformCredits: Codable, Equatable {
+    public let amountCents: Int
+    public let currency: String
+
+    enum CodingKeys: String, CodingKey {
+        case amountCents = "amount"
+        case currency
+    }
+
+    public init(amountCents: Int, currency: String) {
+        self.amountCents = amountCents
+        self.currency = currency
+    }
+
+    public var amount: Double { Double(amountCents) / 100.0 }
+
+    public func formatted(locale: Locale = .current) -> String {
+        let decimal = Decimal(amountCents) / 100
+        return decimal.formatted(.currency(code: currency).locale(locale))
+    }
+}
+
 public enum SubscriptionTier: Equatable {
     case pro
     case max5x

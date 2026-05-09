@@ -227,4 +227,42 @@ struct UsageModelTests {
         #expect(UsageColor.forUtilization(0.91) == .red)
         #expect(UsageColor.forUtilization(1.0) == .red)
     }
+
+    @Test func decodePlatformCreditsResponse() throws {
+        let json = """
+        {
+          "amount": 189,
+          "currency": "USD",
+          "auto_reload_settings": null,
+          "pending_invoice_amount_cents": null,
+          "last_paid_purchase_cents": null
+        }
+        """.data(using: .utf8)!
+
+        let credits = try JSONDecoder().decode(PlatformCredits.self, from: json)
+
+        #expect(credits.amountCents == 189)
+        #expect(credits.currency == "USD")
+        #expect(abs(credits.amount - 1.89) < 0.0001)
+    }
+
+    @Test func decodePlatformCreditsZeroBalance() throws {
+        let json = #"{ "amount": 0, "currency": "USD" }"#.data(using: .utf8)!
+        let credits = try JSONDecoder().decode(PlatformCredits.self, from: json)
+        #expect(credits.amountCents == 0)
+        #expect(credits.amount == 0.0)
+    }
+
+    @Test func platformCreditsFormattedUSEnglish() {
+        let credits = PlatformCredits(amountCents: 189, currency: "USD")
+        let formatted = credits.formatted(locale: Locale(identifier: "en_US"))
+        #expect(formatted.contains("1.89"))
+        #expect(formatted.contains("$"))
+    }
+
+    @Test func platformCreditsFormattedLargeAmount() {
+        let credits = PlatformCredits(amountCents: 1_234_567, currency: "USD")
+        let formatted = credits.formatted(locale: Locale(identifier: "en_US"))
+        #expect(formatted.contains("12,345.67"))
+    }
 }
