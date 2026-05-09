@@ -2,7 +2,7 @@ import Foundation
 
 public struct UpdateChecker {
     public static let repo = "chiliec/ClaudeBar"
-    public static let currentVersion = "0.0.12"
+    public static let currentVersion = "0.0.13"
 
     public struct Release: Codable {
         public let tagName: String
