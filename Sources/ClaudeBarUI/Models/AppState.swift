@@ -34,6 +34,14 @@ public final class AppState {
     public var isLoading = false
     public var error: AppError?
 
+    // Platform (platform.claude.com) prepaid API credit balance — independent of
+    // the claude.ai session. `platformSessionKey` is the host-only sessionKey
+    // captured from platform.claude.com (NOT the claude.ai key).
+    public var platformSessionKey: String?
+    public var platformCredits: PlatformCredits?
+    public var platformCreditsIsStale: Bool = false
+    public var cachedPlatformOrgId: String?
+
     /// Authoritative tier from `/organizations/{id}` when available; falls
     /// back to a heuristic on the usage payload during the first-load window.
     public var tier: SubscriptionTier {
@@ -90,13 +98,19 @@ public final class AppState {
     // Store both values in a single keychain item to avoid multiple password prompts on launch
     private static let credentialsAccount = "credentials"
     private static let credentialsSeparator: Character = "\0"
+    private static let platformCredentialsAccount = "platform_credentials"
 
     public func loadCredentials() {
-        guard let stored = try? keychain.retrieve(account: Self.credentialsAccount) else { return }
+        guard let stored = try? keychain.retrieve(account: Self.credentialsAccount) else {
+            // Even with no claude.ai credentials, a platform key may exist independently.
+            platformSessionKey = try? keychain.retrieve(account: Self.platformCredentialsAccount)
+            return
+        }
         let parts = stored.split(separator: Self.credentialsSeparator, maxSplits: 1)
         guard parts.count == 2 else { return }
         sessionKey = String(parts[0])
         orgId = String(parts[1])
+        platformSessionKey = try? keychain.retrieve(account: Self.platformCredentialsAccount)
     }
 
     public func saveCredentials(sessionKey: String, orgId: String) throws {
@@ -108,6 +122,7 @@ public final class AppState {
 
     public func signOut() {
         try? keychain.delete(account: Self.credentialsAccount)
+        try? keychain.delete(account: Self.platformCredentialsAccount)
         sessionKey = nil
         orgId = nil
         usage = nil
@@ -116,6 +131,10 @@ public final class AppState {
         pendingSessionKey = nil
         pendingOrganizations = []
         pendingOrgPick = false
+        platformSessionKey = nil
+        platformCredits = nil
+        platformCreditsIsStale = false
+        cachedPlatformOrgId = nil
     }
 
     /// Non-destructive recovery: wipes sessionKey + usage but preserves

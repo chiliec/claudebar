@@ -503,4 +503,49 @@ struct AppStateTests {
         #expect(state.lastUpdated == nil)
         #expect(!state.showingSettings)
     }
+
+    // MARK: - Platform State
+
+    @Test func signOutClearsAllPlatformState() throws {
+        let state = makeState()
+        try state.saveCredentials(sessionKey: "sk", orgId: "org-1")
+        state.platformSessionKey = "sk-platform"
+        state.platformCredits = PlatformCredits(amountCents: 189, currency: "USD")
+        state.platformCreditsIsStale = true
+        state.cachedPlatformOrgId = "platform-org-1"
+
+        state.signOut()
+
+        #expect(state.platformSessionKey == nil)
+        #expect(state.platformCredits == nil)
+        #expect(state.platformCreditsIsStale == false)
+        #expect(state.cachedPlatformOrgId == nil)
+    }
+
+    @Test func handleSessionExpiredDoesNotTouchPlatformState() throws {
+        // Critical regression guard: claude.ai expiry MUST NOT clear the platform
+        // key. The two sessions are independent.
+        let state = makeState()
+        try state.saveCredentials(sessionKey: "sk", orgId: "org-1")
+        state.platformSessionKey = "sk-platform"
+        state.platformCredits = PlatformCredits(amountCents: 189, currency: "USD")
+        state.cachedPlatformOrgId = "platform-org-1"
+
+        state.handleSessionExpired()
+
+        #expect(state.platformSessionKey == "sk-platform")
+        #expect(state.platformCredits?.amountCents == 189)
+        #expect(state.cachedPlatformOrgId == "platform-org-1")
+    }
+
+    @Test func loadCredentialsRestoresPlatformKeyFromKeychain() throws {
+        let state = makeState()
+        // Pre-seed keychain via a fresh service instance using the same test name
+        let kc = KeychainService(serviceName: "com.claudebar.test")
+        try kc.save(account: "platform_credentials", value: "sk-platform-restored")
+
+        state.loadCredentials()
+
+        #expect(state.platformSessionKey == "sk-platform-restored")
+    }
 }
