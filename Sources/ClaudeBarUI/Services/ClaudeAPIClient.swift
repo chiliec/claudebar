@@ -202,4 +202,36 @@ extension ClaudeAPIClient {
         }
         return try JSONDecoder().decode(PlatformCredits.self, from: data)
     }
+
+    /// Like `validateHTTPResponse` but maps 401/403 to `PlatformAuthError.sessionExpired`
+    /// instead of `APIError.sessionExpired`. Critical: a platform-side 401/403 must NOT
+    /// drag the user through the global handleSessionExpired() flow that wipes the
+    /// claude.ai key and ejects to SetupView.
+    static func validatePlatformHTTPResponse(_ response: URLResponse) throws {
+        guard let http = response as? HTTPURLResponse else {
+            throw APIError.invalidResponse
+        }
+        switch http.statusCode {
+        case 200: return
+        case 401, 403: throw PlatformAuthError.sessionExpired
+        case 429: throw APIError.rateLimited
+        default: throw APIError.httpError(http.statusCode)
+        }
+    }
+
+    public static func fetchPlatformOrganizations(platformSessionKey: String) async throws -> [Organization] {
+        let request = try buildPlatformOrganizationsRequest(platformSessionKey: platformSessionKey)
+        let (data, response) = try await URLSession.shared.data(for: request)
+        try validatePlatformHTTPResponse(response)
+        return try parsePlatformOrganizationsResponse(data: data)
+    }
+
+    /// Returns `nil` when the org has no prepaid credits (permission_error 200).
+    /// Throws `PlatformAuthError.sessionExpired` on 401/403.
+    public static func fetchPlatformCredits(platformSessionKey: String, platformOrgId: String) async throws -> PlatformCredits? {
+        let request = try buildPlatformCreditsRequest(platformSessionKey: platformSessionKey, platformOrgId: platformOrgId)
+        let (data, response) = try await URLSession.shared.data(for: request)
+        try validatePlatformHTTPResponse(response)
+        return try parsePlatformCreditsResponse(data: data)
+    }
 }
