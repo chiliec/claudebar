@@ -278,6 +278,10 @@ public final class AppState {
                     }
                 }
             }
+            // Platform credits — no-ops when no platform key is connected.
+            Task { @MainActor [weak self] in
+                await self?.refreshPlatformCredits()
+            }
         } catch APIError.sessionExpired {
             handleSessionExpired()
         } catch APIError.rateLimited {
@@ -293,6 +297,101 @@ public final class AppState {
     public func applyRefreshedOrgList(_ fetched: [Organization]) {
         guard !fetched.isEmpty else { return }
         organizations = fetched
+    }
+
+    // MARK: - Platform Credits
+
+    /// Apply a successful platform credits fetch — value is updated, stale flag clears.
+    func applyPlatformCreditsSuccess(_ credits: PlatformCredits) {
+        platformCredits = credits
+        platformCreditsIsStale = false
+    }
+
+    /// Mark the most recent platform credits fetch as failed. Preserves the last
+    /// known value and sets the stale flag if (and only if) we have a value to
+    /// display — there is no "stale nothing" state.
+    func markPlatformCreditsFetchFailed() {
+        if platformCredits != nil {
+            platformCreditsIsStale = true
+        }
+    }
+
+    /// 401/403 from a platform endpoint — clear ONLY the platform side. The
+    /// claude.ai sessionKey, orgId, usage display, and global error state are
+    /// untouched. Settings shows "Disconnected · session expired" via the absence
+    /// of `platformSessionKey`.
+    func applyPlatformSessionExpired() {
+        try? keychain.delete(account: Self.platformCredentialsAccount)
+        platformSessionKey = nil
+        platformCredits = nil
+        platformCreditsIsStale = false
+        cachedPlatformOrgId = nil
+    }
+
+    /// Save a platform-scoped sessionKey to Keychain and trigger an immediate
+    /// balance refresh. Called by both the WKWebView capture path and the manual
+    /// paste path — they share the same downstream pipeline.
+    public func connectPlatform(sessionKey: String) async {
+        do {
+            try keychain.save(account: Self.platformCredentialsAccount, value: sessionKey)
+        } catch {
+            self.error = .network(error.localizedDescription)
+            return
+        }
+        platformSessionKey = sessionKey
+        cachedPlatformOrgId = nil       // force re-discovery for the new account
+        await refreshPlatformCredits()
+    }
+
+    /// User-initiated disconnect: drop the Keychain entry, clear all platform state.
+    public func disconnectPlatform() {
+        try? keychain.delete(account: Self.platformCredentialsAccount)
+        platformSessionKey = nil
+        platformCredits = nil
+        platformCreditsIsStale = false
+        cachedPlatformOrgId = nil
+    }
+
+    /// Discover the API org (cached for the session) and fetch its prepaid credit
+    /// balance. No-op when `platformSessionKey == nil` — the caller does not need
+    /// to gate. Network failures are silent: keep the last known value, mark stale.
+    /// 401/403 specifically clears the platform key (decision #8 in the v2 spec).
+    func refreshPlatformCredits() async {
+        guard let key = platformSessionKey else { return }
+
+        if cachedPlatformOrgId == nil {
+            do {
+                let orgs = try await ClaudeAPIClient.fetchPlatformOrganizations(platformSessionKey: key)
+                let apiOrgs = orgs.filter { $0.capabilities?.contains("api") == true }
+                cachedPlatformOrgId = apiOrgs.first?.uuid
+                if apiOrgs.count > 1 {
+                    NSLog("ClaudeBar: multiple platform API orgs found, using first (%@)", apiOrgs.first?.uuid ?? "?")
+                }
+            } catch is PlatformAuthError {
+                applyPlatformSessionExpired()
+                return
+            } catch {
+                markPlatformCreditsFetchFailed()
+                return
+            }
+        }
+        guard let orgId = cachedPlatformOrgId else { return }   // No API org for this account
+
+        do {
+            if let credits = try await ClaudeAPIClient.fetchPlatformCredits(
+                platformSessionKey: key, platformOrgId: orgId
+            ) {
+                applyPlatformCreditsSuccess(credits)
+            } else {
+                // permission_error 200 — cached UUID stale or org lost `api`.
+                cachedPlatformOrgId = nil
+                markPlatformCreditsFetchFailed()
+            }
+        } catch is PlatformAuthError {
+            applyPlatformSessionExpired()
+        } catch {
+            markPlatformCreditsFetchFailed()
+        }
     }
 
     // MARK: - Polling

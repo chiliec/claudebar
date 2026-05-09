@@ -548,4 +548,69 @@ struct AppStateTests {
 
         #expect(state.platformSessionKey == "sk-platform-restored")
     }
+
+    @Test func applyPlatformCreditsSuccessSetsValueAndClearsStale() {
+        let state = makeState()
+        state.platformCreditsIsStale = true
+
+        state.applyPlatformCreditsSuccess(PlatformCredits(amountCents: 250, currency: "USD"))
+
+        #expect(state.platformCredits?.amountCents == 250)
+        #expect(state.platformCreditsIsStale == false)
+    }
+
+    @Test func markPlatformCreditsFetchFailedSetsStaleWhenValueExists() {
+        let state = makeState()
+        state.platformCredits = PlatformCredits(amountCents: 189, currency: "USD")
+
+        state.markPlatformCreditsFetchFailed()
+
+        #expect(state.platformCredits?.amountCents == 189)
+        #expect(state.platformCreditsIsStale == true)
+    }
+
+    @Test func markPlatformCreditsFetchFailedNoOpWhenNoValue() {
+        let state = makeState()
+
+        state.markPlatformCreditsFetchFailed()
+
+        #expect(state.platformCredits == nil)
+        #expect(state.platformCreditsIsStale == false)
+    }
+
+    @Test func applyPlatformSessionExpiredClearsPlatformKeyAndCacheButPreservesUsage() throws {
+        let state = makeState()
+        try state.saveCredentials(sessionKey: "sk", orgId: "org-1")
+        state.platformSessionKey = "sk-platform"
+        state.platformCredits = PlatformCredits(amountCents: 189, currency: "USD")
+        state.cachedPlatformOrgId = "platform-org-1"
+
+        state.applyPlatformSessionExpired()
+
+        // Platform side cleared
+        #expect(state.platformSessionKey == nil)
+        #expect(state.platformCredits == nil)
+        #expect(state.platformCreditsIsStale == false)
+        #expect(state.cachedPlatformOrgId == nil)
+        // claude.ai side preserved
+        #expect(state.sessionKey == "sk")
+        #expect(state.orgId == "org-1")
+        #expect(state.error == nil)
+    }
+
+    @Test func disconnectPlatformDeletesKeychainEntryAndClearsState() throws {
+        let state = makeState()
+        let kc = KeychainService(serviceName: "com.claudebar.test")
+        try kc.save(account: "platform_credentials", value: "sk-platform")
+        state.platformSessionKey = "sk-platform"
+        state.platformCredits = PlatformCredits(amountCents: 189, currency: "USD")
+        state.cachedPlatformOrgId = "platform-org-1"
+
+        state.disconnectPlatform()
+
+        #expect(state.platformSessionKey == nil)
+        #expect(state.platformCredits == nil)
+        #expect(state.cachedPlatformOrgId == nil)
+        #expect((try? kc.retrieve(account: "platform_credentials")) == nil)
+    }
 }
