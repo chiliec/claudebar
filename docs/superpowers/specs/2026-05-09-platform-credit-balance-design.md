@@ -1,7 +1,7 @@
 # Platform API Credit Balance — Design
 
 **Date:** 2026-05-09
-**Status:** Approved (brainstorm) → ready for implementation plan
+**Status:** Reverted 2026-05-09 — central auth assumption invalidated. See "Post-mortem" at the end of this document.
 **Scope:** Surface the user's prepaid API credit balance from `platform.claude.com` inside the existing popover, alongside the claude.ai usage display.
 
 ---
@@ -228,3 +228,25 @@ Visually consistent with the existing rows: small-caps section title (localized 
 4. A balance fetch failure after at least one prior success retains the displayed value with reduced opacity; usage display is unaffected.
 5. On sign-out, `platformCredits` is cleared and the section disappears immediately.
 6. New tests in `PlatformCreditsTests.swift` and the extensions to `ClaudeAPIClientTests` / `AppStateTests` pass; existing 120 tests remain green.
+
+## Post-mortem (2026-05-09): not shipped — auth assumption invalidated
+
+The plan (commit `c63a8e7`) was implemented in full across six commits (later reverted). All 134 tests passed. On the live smoke test against the author's account, `/api/organizations` returned 200 with the expected three orgs (one carrying the `api` capability) — but `/api/organizations/{uuid}/prepaid/credits` returned **403** with the same cookie.
+
+Root cause: this spec's central assumption — *"the same `sessionKey` cookie unlocks both `claude.ai` and `platform.claude.com` because both share the parent `.claude.com` cookie domain"* — was wrong. There are **two distinct cookies named `sessionKey`**:
+
+- One issued by `claude.ai` on the parent domain `.claude.com` (the one this app stores in Keychain after the user pastes from claude.ai DevTools).
+- One issued by `platform.claude.com` scoped host-only to that subdomain (set when the user logs into the developer console).
+
+When a browser visits `platform.claude.com`, RFC 6265 makes it send the host-specific cookie in preference to the parent-domain one. The captured cURL the user pasted during brainstorming therefore showed only the platform-scoped value, masking the dual-cookie reality. Both keys share the prefix `sk-ant-sid02-…` so they look identical at a glance.
+
+Empirical evidence (from the smoke test, both keys belonging to the same authenticated user):
+
+| Cookie | `/api/organizations` | `/api/organizations/{id}/prepaid/credits` |
+|---|---|---|
+| claude.ai-scoped (`-UOxn…`) | 200 | **403** |
+| platform-scoped (`-bhn…`) | n/a tested | 200 |
+
+The discovery endpoint is more permissive than the credits endpoint — it accepts the claude.ai-scoped key — which is what made the architecture look workable in the spec phase. Adding `anthropic-client-platform: web_console`, `Referer`, `routingHint`, and `lastActiveOrg` did not elevate the claude.ai-scoped key.
+
+**Why we reverted instead of adapting:** to make this work the app would need a second Keychain entry, a second field in Settings, updated onboarding instructions ("now also paste the sessionKey from platform.claude.com"), and a new state machine for partial connections. That doubles the auth complexity for a single read-only display value (an API balance that's typically <$10). The cost/value math does not justify the change. If a future user requests the feature strongly enough, this spec and the reverted commits (visible in `c63a8e7..1100788` of the original branch history) document the path.
