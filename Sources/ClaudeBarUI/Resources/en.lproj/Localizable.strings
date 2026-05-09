@@ -16,6 +16,7 @@
 "error.api %@" = "API error: %@";
 "error.rateLimited" = "Rate limited — will retry";
 "error.sessionExpired" = "Session expired — update your key";
+"section.apiCredits" = "API Credits";
 "session.expired" = "Session Expired";
 "session.expiredSubtitle" = "Your sessionKey has expired. Paste a new one from claude.ai cookies.";
 "session.reconnect %@" = "Reconnect %@";
@@ -25,6 +26,16 @@
 "settings.launchAtLogin" = "Launch at login";
 "settings.notConnected" = "Not connected";
 "settings.organization" = "Organization:";
+"settings.platformAPI" = "Platform API";
+"settings.platformAPI.notConnected" = "Not connected · API balance hidden";
+"settings.platformAPI.connected" = "Connected";
+"settings.platformAPI.expired" = "Disconnected · session expired";
+"settings.platformAPI.connect" = "Connect";
+"settings.platformAPI.disconnect" = "Disconnect";
+"settings.platformAPI.pasteManually" = "Paste cookie manually";
+"settings.platformAPI.replaceKey" = "Replace key…";
+"settings.platformAPI.connectSheet.title" = "Connect to platform.claude.com";
+"settings.platformAPI.connectSheet.timeout" = "Connection timed out";
 "settings.session" = "Session";
 "settings.sessionKey" = "Session key:";
 "settings.title" = "Settings";

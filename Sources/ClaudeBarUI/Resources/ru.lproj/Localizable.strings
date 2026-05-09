@@ -16,6 +16,7 @@
 "error.api %@" = "Ошибка API: %@";
 "error.rateLimited" = "Превышен лимит запросов — повтор позже";
 "error.sessionExpired" = "Сессия истекла — обновите ключ";
+"section.apiCredits" = "API кредиты";
 "session.expired" = "Сессия истекла";
 "session.expiredSubtitle" = "Ваш sessionKey истёк. Вставьте новый из cookies на claude.ai.";
 "session.reconnect %@" = "Переподключить %@";
@@ -25,6 +26,16 @@
 "settings.launchAtLogin" = "Запускать при входе";
 "settings.notConnected" = "Не подключено";
 "settings.organization" = "Организация:";
+"settings.platformAPI" = "Platform API";
+"settings.platformAPI.notConnected" = "Не подключено · баланс API скрыт";
+"settings.platformAPI.connected" = "Подключено";
+"settings.platformAPI.expired" = "Отключено · сессия истекла";
+"settings.platformAPI.connect" = "Подключить";
+"settings.platformAPI.disconnect" = "Отключить";
+"settings.platformAPI.pasteManually" = "Вставить cookie вручную";
+"settings.platformAPI.replaceKey" = "Заменить ключ…";
+"settings.platformAPI.connectSheet.title" = "Подключение к platform.claude.com";
+"settings.platformAPI.connectSheet.timeout" = "Время ожидания подключения истекло";
 "settings.session" = "Сессия";
 "settings.sessionKey" = "Ключ сессии:";
 "settings.title" = "Настройки";
