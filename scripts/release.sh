@@ -1,7 +1,12 @@
 #!/bin/bash
 set -e
 
-VERSION="${1:?Usage: ./scripts/release.sh <version> (e.g. 1.1.0)}"
+VERSION="${1:?Usage: ./scripts/release.sh <version> [changes-file] (e.g. 1.1.0 release-notes/1.1.0.md)}"
+CHANGES_FILE="${2:-}"
+if [ -n "$CHANGES_FILE" ] && [ ! -f "$CHANGES_FILE" ]; then
+    echo "Error: changes file '$CHANGES_FILE' not found"
+    exit 1
+fi
 APP_NAME="ClaudeBar"
 BUILD_DIR=".build/release"
 BUNDLE_DIR="$BUILD_DIR/$APP_NAME.app"
@@ -42,7 +47,13 @@ git push origin main --tags --force
 echo "==> Creating GitHub release"
 NOTES_FILE=$(mktemp)
 trap 'rm -f "$NOTES_FILE"' EXIT
-cat > "$NOTES_FILE" <<NOTES
+if [ -n "$CHANGES_FILE" ]; then
+    echo "### What's new" > "$NOTES_FILE"
+    echo "" >> "$NOTES_FILE"
+    cat "$CHANGES_FILE" >> "$NOTES_FILE"
+    echo "" >> "$NOTES_FILE"
+fi
+cat >> "$NOTES_FILE" <<NOTES
 ### Install
 
 Paste this in Terminal:
