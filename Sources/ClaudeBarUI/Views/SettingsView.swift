@@ -6,16 +6,13 @@ public struct SettingsView: View {
 
     @State private var keyDraft: String = ""
     @State private var inlineKeyError: String?
-    @State private var showingPlatformConnect = false
-    @State private var platformSheetTimedOut = false
     @State private var platformPasteDraft: String = ""
     @State private var platformPasteError: String?
-    @State private var showingPlatformPaste = false
 
     public init(state: AppState) { self.state = state }
 
     public var body: some View {
-        VStack(alignment: .leading, spacing: 16) {
+        VStack(alignment: .leading, spacing: 12) {
             HStack {
                 Text("settings.title", bundle: .module)
                     .font(.headline)
@@ -29,34 +26,30 @@ public struct SettingsView: View {
                 .controlSize(.small)
             }
 
-            sessionGroup
-            platformAPISection
+            ScrollView {
+                VStack(alignment: .leading, spacing: 12) {
+                    sessionGroup
+                    platformAPISection
 
-            // Launch at login
-            GroupBox {
-                VStack(alignment: .leading, spacing: 8) {
-                    LaunchAtLoginToggle()
+                    // Launch at login
+                    GroupBox {
+                        VStack(alignment: .leading, spacing: 8) {
+                            LaunchAtLoginToggle()
+                        }
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .padding(4)
+                    } label: {
+                        Text("settings.general", bundle: .module)
+                    }
                 }
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .padding(4)
-            } label: {
-                Text("settings.general", bundle: .module)
             }
-
-            Spacer()
+            .scrollIndicators(.automatic)
 
             Divider()
             QuitButton()
         }
-        .padding(16)
-        .frame(width: 360, height: 460)
-        .sheet(isPresented: $showingPlatformConnect) {
-            PlatformConnectSheet(
-                state: state,
-                isPresented: $showingPlatformConnect,
-                timedOut: $platformSheetTimedOut
-            )
-        }
+        .padding(12)
+        .frame(height: 460)
     }
 
     @ViewBuilder
@@ -96,22 +89,8 @@ public struct SettingsView: View {
         GroupBox {
             VStack(alignment: .leading, spacing: 10) {
                 platformStatusRow
-
-                DisclosureGroup(isExpanded: $showingPlatformPaste) {
+                if state.platformSessionKey == nil {
                     platformPasteField
-                } label: {
-                    Text(state.platformSessionKey == nil
-                         ? "settings.platformAPI.pasteManually"
-                         : "settings.platformAPI.replaceKey",
-                         bundle: .module)
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                }
-
-                if platformSheetTimedOut {
-                    Text("settings.platformAPI.connectSheet.timeout", bundle: .module)
-                        .font(.caption)
-                        .foregroundStyle(.orange)
                 }
             }
             .frame(maxWidth: .infinity, alignment: .leading)
@@ -142,16 +121,7 @@ public struct SettingsView: View {
                     .foregroundStyle(.secondary)
             }
             Spacer()
-            if state.platformSessionKey == nil {
-                Button {
-                    platformSheetTimedOut = false
-                    showingPlatformConnect = true
-                } label: {
-                    Text("settings.platformAPI.connect", bundle: .module)
-                }
-                .modifier(BorderedButtonModifier())
-                .controlSize(.small)
-            } else {
+            if state.platformSessionKey != nil {
                 Button {
                     state.disconnectPlatform()
                     platformPasteDraft = ""
@@ -169,6 +139,9 @@ public struct SettingsView: View {
     @ViewBuilder
     private var platformPasteField: some View {
         VStack(alignment: .leading, spacing: 4) {
+            Text("settings.platformAPI.pasteManually", bundle: .module)
+                .font(.caption)
+                .foregroundStyle(.secondary)
             HStack {
                 SecureField("", text: $platformPasteDraft, prompt: Text("setup.sessionKeyPlaceholder", bundle: .module))
                     .textFieldStyle(.roundedBorder)
@@ -176,15 +149,10 @@ public struct SettingsView: View {
                 Button {
                     let trimmed = platformPasteDraft.trimmingCharacters(in: .whitespacesAndNewlines)
                     guard !trimmed.isEmpty else { return }
-                    guard trimmed.hasPrefix("sk-ant-") else {
-                        platformPasteError = String(localized: "update.badKey", bundle: .module)
-                        return
-                    }
                     platformPasteError = nil
                     Task {
                         await state.connectPlatform(sessionKey: trimmed)
                         platformPasteDraft = ""
-                        showingPlatformPaste = false
                     }
                 } label: {
                     Text("action.update", bundle: .module)
