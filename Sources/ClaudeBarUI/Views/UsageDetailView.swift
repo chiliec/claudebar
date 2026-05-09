@@ -19,6 +19,12 @@ struct UsageDetailView: View {
                         .padding(.bottom, 8)
                     extraUsageSection(used: used, limit: limit, currency: extra.currency, overage: extra.overageBalance, overageCurrency: extra.overageBalanceCurrency)
                 }
+                if let credits = state.platformCredits {
+                    Divider()
+                        .padding(.horizontal, 16)
+                        .padding(.bottom, 8)
+                    apiCreditsSection(credits, isStale: state.platformCreditsIsStale)
+                }
             } else if state.isLoading {
                 ProgressView()
                     .padding(40)
@@ -259,6 +265,21 @@ struct UsageDetailView: View {
         }
         .padding(.horizontal, 16)
         .padding(.bottom, 12)
+    }
+
+    private func apiCreditsSection(_ credits: PlatformCredits, isStale: Bool) -> some View {
+        HStack {
+            Text("section.apiCredits", bundle: .module)
+                .font(.subheadline)
+                .foregroundStyle(.secondary)
+            Spacer()
+            Text(verbatim: credits.formatted())
+                .font(.subheadline.weight(.semibold))
+                .foregroundStyle(.green)
+        }
+        .padding(.horizontal, 16)
+        .padding(.bottom, 12)
+        .opacity(isStale ? 0.5 : 1.0)
     }
 
     private static func currencySymbol(for code: String?) -> String {
