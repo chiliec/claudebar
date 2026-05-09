@@ -49,4 +49,85 @@ struct ClaudeAPIClientTests {
         #expect(orgs[0].uuid == "org-abc")
         #expect(orgs[1].name == "Work")
     }
+
+    @Test func buildPlatformOrganizationsRequest() throws {
+        let request = try ClaudeAPIClient.buildPlatformOrganizationsRequest(platformSessionKey: "sk-test")
+        #expect(request.url?.absoluteString == "https://platform.claude.com/api/organizations")
+        #expect(request.value(forHTTPHeaderField: "Cookie") == "sessionKey=sk-test")
+        #expect(request.value(forHTTPHeaderField: "anthropic-client-platform") == "web_console")
+        #expect(request.httpMethod == "GET")
+    }
+
+    @Test func buildPlatformCreditsRequest() throws {
+        let request = try ClaudeAPIClient.buildPlatformCreditsRequest(
+            platformSessionKey: "sk-test",
+            platformOrgId: "8bc28b46-d6dd-4982-a38a-66a11be1c437"
+        )
+        #expect(request.url?.absoluteString == "https://platform.claude.com/api/organizations/8bc28b46-d6dd-4982-a38a-66a11be1c437/prepaid/credits")
+        #expect(request.value(forHTTPHeaderField: "Cookie") == "sessionKey=sk-test")
+        #expect(request.value(forHTTPHeaderField: "anthropic-client-platform") == "web_console")
+        #expect(request.value(forHTTPHeaderField: "Referer") == "https://platform.claude.com/settings/billing")
+    }
+
+    @Test func parsePlatformOrganizationsIgnoresExtraFields() throws {
+        let json = """
+        [
+          {
+            "id": 136002694,
+            "uuid": "4f4dee87-d910-4390-ae54-b64ad23b9243",
+            "name": "Personal",
+            "settings": { "claude_console_privacy": "default_private" },
+            "capabilities": ["claude_pro", "chat"],
+            "billing_type": "stripe_subscription"
+          },
+          {
+            "id": 151870534,
+            "uuid": "8bc28b46-d6dd-4982-a38a-66a11be1c437",
+            "name": "Vova's Individual Org",
+            "settings": {},
+            "capabilities": ["api", "api_individual"],
+            "billing_type": "api_evaluation"
+          }
+        ]
+        """.data(using: .utf8)!
+
+        let orgs = try ClaudeAPIClient.parsePlatformOrganizationsResponse(data: json)
+        #expect(orgs.count == 2)
+        #expect(orgs[1].uuid == "8bc28b46-d6dd-4982-a38a-66a11be1c437")
+        #expect(orgs[1].capabilities?.contains("api") == true)
+    }
+
+    @Test func parsePlatformCreditsHappyPath() throws {
+        let json = """
+        {
+          "amount": 189,
+          "currency": "USD",
+          "auto_reload_settings": null,
+          "pending_invoice_amount_cents": null,
+          "last_paid_purchase_cents": null
+        }
+        """.data(using: .utf8)!
+
+        let credits = try ClaudeAPIClient.parsePlatformCreditsResponse(data: json)
+        #expect(credits != nil)
+        #expect(credits?.amountCents == 189)
+        #expect(credits?.currency == "USD")
+    }
+
+    @Test func parsePlatformCreditsReturnsNilOnPermissionError() throws {
+        let json = """
+        {
+          "type": "error",
+          "error": {
+            "type": "permission_error",
+            "message": "Invalid authorization for organization",
+            "details": { "error_visibility": "user_facing" }
+          },
+          "request_id": "req_011CarEk9gJt4F4znLHquZ25"
+        }
+        """.data(using: .utf8)!
+
+        let credits = try ClaudeAPIClient.parsePlatformCreditsResponse(data: json)
+        #expect(credits == nil)
+    }
 }

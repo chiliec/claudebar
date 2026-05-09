@@ -100,7 +100,7 @@ public struct ClaudeAPIClient {
         return try parseOrganizationsResponse(data: data)
     }
 
-    private static func validateHTTPResponse(_ response: URLResponse) throws {
+    static func validateHTTPResponse(_ response: URLResponse) throws {
         guard let http = response as? HTTPURLResponse else {
             throw APIError.invalidResponse
         }
@@ -143,4 +143,63 @@ extension ISO8601DateFormatter {
         f.formatOptions = [.withInternetDateTime]
         return f
     }()
+}
+
+// MARK: - platform.claude.com (prepaid API credits)
+
+public enum PlatformAuthError: Error, Equatable {
+    /// 401/403 from platform.claude.com — clear ONLY the platform key.
+    /// Distinct from APIError.sessionExpired which owns the claude.ai key.
+    case sessionExpired
+    /// Listing returned 200 but no org has the `api` capability.
+    case noApiOrg
+}
+
+extension ClaudeAPIClient {
+    private static let platformBaseURL = "https://platform.claude.com"
+
+    private static func applyPlatformHeaders(_ request: inout URLRequest, platformSessionKey: String) {
+        request.setValue("sessionKey=\(platformSessionKey)", forHTTPHeaderField: "Cookie")
+        request.setValue("web_console", forHTTPHeaderField: "anthropic-client-platform")
+        request.setValue("https://platform.claude.com/settings/billing", forHTTPHeaderField: "Referer")
+    }
+
+    public static func buildPlatformOrganizationsRequest(platformSessionKey: String) throws -> URLRequest {
+        guard let url = URL(string: "\(platformBaseURL)/api/organizations") else {
+            throw APIError.invalidURL
+        }
+        var request = URLRequest(url: url)
+        request.httpMethod = "GET"
+        applyPlatformHeaders(&request, platformSessionKey: platformSessionKey)
+        return request
+    }
+
+    public static func buildPlatformCreditsRequest(platformSessionKey: String, platformOrgId: String) throws -> URLRequest {
+        guard let url = URL(string: "\(platformBaseURL)/api/organizations/\(platformOrgId)/prepaid/credits") else {
+            throw APIError.invalidURL
+        }
+        var request = URLRequest(url: url)
+        request.httpMethod = "GET"
+        applyPlatformHeaders(&request, platformSessionKey: platformSessionKey)
+        return request
+    }
+
+    public static func parsePlatformOrganizationsResponse(data: Data) throws -> [Organization] {
+        return try JSONDecoder().decode([Organization].self, from: data)
+    }
+
+    /// Parse the prepaid credits response. Returns `nil` for the
+    /// `permission_error` 200 body (session valid, org has no credits).
+    public static func parsePlatformCreditsResponse(data: Data) throws -> PlatformCredits? {
+        struct ErrorEnvelope: Decodable {
+            struct Inner: Decodable { let type: String }
+            let type: String
+            let error: Inner
+        }
+        if let env = try? JSONDecoder().decode(ErrorEnvelope.self, from: data),
+           env.type == "error" {
+            return nil
+        }
+        return try JSONDecoder().decode(PlatformCredits.self, from: data)
+    }
 }
